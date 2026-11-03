@@ -1,0 +1,53 @@
+server:
+  port: ${SERVER_PORT:8084}
+  shutdown: graceful
+
+spring:
+  application:
+    name: administracion-service
+  datasource:
+    url: ${ADMIN_DB_URL:jdbc:postgresql://localhost:5436/admin_db}
+    username: ${ADMIN_DB_USER:nomina_admin}
+    password: ${ADMIN_DB_PASSWORD:admin_dev_pass}
+    hikari:
+      pool-name: admin-pool
+      maximum-pool-size: 10
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789ABCDEFGHIJ}
+    issuer: ${JWT_ISSUER:nomina360}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    level: "%5p [corr:%X{correlationId:-}] [user:%X{usuarioId:-}]"
+  level:
+    mx.nomina360: INFO

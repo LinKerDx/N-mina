@@ -1,0 +1,47 @@
+{
+  "name": "nomina360",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Nómina360 — sistema de control de nóminas (monorepo multipaquete)",
+  "packageManager": "pnpm@11.1.1",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:web": "pnpm --filter @nomina360/web dev",
+    "build": "turbo run build",
+    "build:web": "pnpm --filter @nomina360/web build",
+    "preview:web": "pnpm --filter @nomina360/web preview",
+    "test": "turbo run test",
+    "test:web": "pnpm --filter @nomina360/web test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
+    "typecheck": "turbo run typecheck",
+    "backend:build": "mvn -f backend/pom.xml -B -ntp verify",
+    "backend:run:auth": "mvn -f backend/pom.xml -B -ntp -pl services/auth-service spring-boot:run",
+    "backend:run:rh": "mvn -f backend/pom.xml -B -ntp -pl services/rh-service spring-boot:run",
+    "backend:run:produccion": "mvn -f backend/pom.xml -B -ntp -pl services/produccion-service spring-boot:run",
+    "backend:run:administracion": "mvn -f backend/pom.xml -B -ntp -pl services/administracion-service spring-boot:run",
+    "backend:run:gateway": "mvn -f backend/pom.xml -B -ntp -pl services/api-gateway spring-boot:run",
+    "compose:up": "docker compose up --build -d",
+    "compose:down": "docker compose down",
+    "compose:logs": "docker compose logs -f --tail=100",
+    "compose:backup": "docker compose -f docker-compose.yml -f infra/backup/docker-compose.backup.yml up -d backup",
+    "db:backup": "bash infra/backup/backup.sh",
+    "db:restore-drill": "bash infra/backup/restore-drill.sh"
+  },
+  "devDependencies": {
+    "eslint": "^9.27.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.32.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

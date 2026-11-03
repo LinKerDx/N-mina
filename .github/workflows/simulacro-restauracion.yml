@@ -1,0 +1,74 @@
+name: Simulacro de restauración
+
+# Descarga el respaldo más reciente de cada área, lo restaura en PostgreSQL
+# desechable y valida que las tablas críticas tengan filas.
+# Se ejecuta semanalmente y a demanda: un respaldo no vale nada si no se restaura.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # lunes 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulacro:
+    name: Restaurar y validar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: drill
+          POSTGRES_PASSWORD: drill
+          POSTGRES_DB: drill
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U drill"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      AWS_REGION: ${{ vars.BACKUP_S3_REGION }}
+      BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+      BACKUP_S3_ENDPOINT: ${{ vars.BACKUP_S3_ENDPOINT }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      PGHOST: localhost
+      PGPORT: "55432"
+      PGUSER: drill
+      PGPASSWORD: drill
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar cliente PostgreSQL y AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16 awscli openssl
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.BACKUP_S3_REGION }}
+
+      - name: Restaurar y validar cada área
+        run: bash infra/backup/restore-drill.sh
+
+      - name: Resultado
+        if: always()
+        run: |
+          echo '## Simulacro de restauración' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f infra/backup/drill-reporte.json ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat infra/backup/drill-reporte.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Sin reporte: el simulacro falló antes de generarlo.' >> "$GITHUB_STEP_SUMMARY"
+          fi

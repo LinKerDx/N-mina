@@ -1,0 +1,100 @@
+name: Respaldo de bases de datos
+
+# Respaldo lógico diario (pg_dump -Fc) cifrado y enviado a S3.
+# Para PITR continuo se usa pgBackRest (ver docs/RESPALDOS.md).
+#
+# Requisitos del runner:
+#   - self-hosted dentro de la red privada (acceso directo a PostgreSQL)
+#   - secrets configurados en el Environment "production"
+#   - awscli, postgresql-client 16 y openssl instalados
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC = 01:00 America/Mexico_City
+  workflow_dispatch:
+    inputs:
+      ambiente:
+        description: "Ambiente a respaldar"
+        type: choice
+        options: [production, staging]
+        default: production
+
+concurrency:
+  group: respaldo-bd
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    name: Respaldo lógico cifrado
+    runs-on: [self-hosted, linux, nomina360]
+    environment: ${{ inputs.ambiente || 'production' }}
+    timeout-minutes: 90
+
+    env:
+      AWS_REGION: ${{ vars.BACKUP_S3_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.BACKUP_S3_REGION }}
+      BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+      BACKUP_S3_ENDPOINT: ${{ vars.BACKUP_S3_ENDPOINT }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      BACKUP_RETENTION_DAYS: ${{ vars.BACKUP_RETENTION_DAYS || '14' }}
+      BACKUP_RETENTION_WEEKS: ${{ vars.BACKUP_RETENTION_WEEKS || '8' }}
+      BACKUP_RETENTION_MONTHS: ${{ vars.BACKUP_RETENTION_MONTHS || '12' }}
+      DB_AUTH_HOST: ${{ vars.DB_AUTH_HOST }}
+      DB_AUTH_PORT: ${{ vars.DB_AUTH_PORT || '5432' }}
+      DB_RH_HOST: ${{ vars.DB_RH_HOST }}
+      DB_RH_PORT: ${{ vars.DB_RH_PORT || '5432' }}
+      DB_PRODUCCION_HOST: ${{ vars.DB_PRODUCCION_HOST }}
+      DB_PRODUCCION_PORT: ${{ vars.DB_PRODUCCION_PORT || '5432' }}
+      DB_ADMIN_HOST: ${{ vars.DB_ADMIN_HOST }}
+      DB_ADMIN_PORT: ${{ vars.DB_ADMIN_PORT || '5432' }}
+      AUTH_DB_NAME: ${{ vars.AUTH_DB_NAME }}
+      AUTH_DB_USER: ${{ vars.AUTH_DB_USER }}
+      AUTH_DB_PASSWORD: ${{ secrets.AUTH_DB_PASSWORD }}
+      RH_DB_NAME: ${{ vars.RH_DB_NAME }}
+      RH_DB_USER: ${{ vars.RH_DB_USER }}
+      RH_DB_PASSWORD: ${{ secrets.RH_DB_PASSWORD }}
+      PRODUCCION_DB_NAME: ${{ vars.PRODUCCION_DB_NAME }}
+      PRODUCCION_DB_USER: ${{ vars.PRODUCCION_DB_USER }}
+      PRODUCCION_DB_PASSWORD: ${{ secrets.PRODUCCION_DB_PASSWORD }}
+      ADMIN_DB_NAME: ${{ vars.ADMIN_DB_NAME }}
+      ADMIN_DB_USER: ${{ vars.ADMIN_DB_USER }}
+      ADMIN_DB_PASSWORD: ${{ secrets.ADMIN_DB_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar herramientas
+        run: |
+          pg_dump --version
+          pg_restore --version
+          aws --version
+          openssl version
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.BACKUP_S3_REGION }}
+
+      - name: Ejecutar respaldo
+        run: bash infra/backup/backup.sh
+
+      - name: Publicar reporte
+        if: always()
+        run: |
+          if [ -f infra/backup/reporte.json ]; then
+            echo '## Reporte de respaldo' >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat infra/backup/reporte.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Avisar fallo
+        if: failure()
+        run: |
+          echo "::error::El respaldo falló. Revisar el run y ejecutar el runbook de docs/RESPALDOS.md"
+          exit 1

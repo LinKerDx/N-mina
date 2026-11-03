@@ -1,0 +1,62 @@
+# ---------------------------------------------------------------------------
+# pgBackRest — respaldo físico con PITR (capa 1 de la estrategia).
+#
+# Se instala pgBackRest EN EL SERVIDOR de PostgreSQL (o en un sidecar con acceso
+# al datadir y a los sockets). Un bloque [stanza] por área.
+#
+# Copia este archivo como /etc/pgbackrest/pgbackrest.conf y ajusta:
+#   - repo1-s3-bucket / repo1-s3-endpoint / región
+#   - repo1-cipher-pass (idealmente desde un secret manager, no en disco)
+#   - pg1-path y pg1-port de cada instancia
+#
+# Comandos:
+#   pgbackrest --stanza=rh stanza-create
+#   pgbackrest --stanza=rh check
+#   pgbackrest --stanza=rh backup --type=full
+#   pgbackrest --stanza=rh backup --type=incr
+#   pgbackrest --stanza=rh restore --delta --target-action=promote
+# ---------------------------------------------------------------------------
+[global]
+repo1-type=s3
+repo1-s3-bucket=nomina360-backups
+repo1-s3-endpoint=s3.us-east-1.amazonaws.com
+repo1-s3-region=us-east-1
+repo1-s3-key-type=auto
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=CAMBIA_EN_SECRET_MANAGER
+repo1-retention-full=4
+repo1-retention-diff=14
+repo1-retention-archive-type=full
+repo1-retention-archive=4
+compress-type=zst
+compress-level=6
+archive-async=y
+spool-path=/var/spool/pgbackrest
+log-level-console=info
+log-level-file=detail
+start-fast=y
+delta=y
+
+# --- Área: autenticación ---------------------------------------------------
+[auth]
+pg1-path=/var/lib/postgresql/data
+pg1-port=5432
+pg1-socket-path=/var/run/postgresql
+
+# --- Área: recursos humanos ------------------------------------------------
+[rh]
+pg1-path=/var/lib/postgresql/data
+pg1-port=5432
+pg1-socket-path=/var/run/postgresql
+
+# --- Área: producción ------------------------------------------------------
+[produccion]
+pg1-path=/var/lib/postgresql/data
+pg1-port=5432
+pg1-socket-path=/var/run/postgresql
+
+# --- Área: administración --------------------------------------------------
+[administracion]
+pg1-path=/var/lib/postgresql/data
+pg1-port=5432
+pg1-socket-path=/var/run/postgresql

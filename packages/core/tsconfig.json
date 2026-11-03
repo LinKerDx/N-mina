@@ -1,0 +1,8 @@
+{
+  "extends": "@nomina360/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": []
+  },
+  "include": ["src"]
+}

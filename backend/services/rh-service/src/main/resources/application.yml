@@ -1,0 +1,66 @@
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+
+spring:
+  application:
+    name: rh-service
+  datasource:
+    url: ${RH_DB_URL:jdbc:postgresql://localhost:5434/rh_db}
+    username: ${RH_DB_USER:nomina_rh}
+    password: ${RH_DB_PASSWORD:rh_dev_pass}
+    hikari:
+      pool-name: rh-pool
+      maximum-pool-size: 12
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:nomina}
+    password: ${RABBITMQ_PASSWORD:nomina_dev_pass}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 2s
+          multiplier: 2
+        default-requeue-rejected: false
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789ABCDEFGHIJ}
+    issuer: ${JWT_ISSUER:nomina360}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    level: "%5p [corr:%X{correlationId:-}] [user:%X{usuarioId:-}]"
+  level:
+    mx.nomina360: INFO

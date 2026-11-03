@@ -1,0 +1,11 @@
+{
+  "extends": "@nomina360/tsconfig/react-app.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

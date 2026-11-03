@@ -1,0 +1,8 @@
+{
+  "extends": "@nomina360/tsconfig/node.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true
+  },
+  "include": ["vite.config.ts", "tailwind.config.ts"]
+}

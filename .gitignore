@@ -1,0 +1,51 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+.pnpm-cache/
+.pnpm-state/
+.turbo/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.tmp/
+
+# Entorno
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Java / Maven
+backend/**/target/
+.m2repo/
+maven-settings-local.xml
+*.class
+
+# Docker / datos locales
+.docker-data/
+infra/backup/tmp/
+infra/backup/tmp-drill/
+infra/backup/repo/
+infra/backup/reporte.json
+infra/backup/drill-reporte.json
+
+# Herramientas locales
+.npmcache/
+.cache/
+.local-share/
+.local-state/
+.vite/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/

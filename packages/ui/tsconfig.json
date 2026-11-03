@@ -1,0 +1,7 @@
+{
+  "extends": "@nomina360/tsconfig/react-app.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src"]
+}

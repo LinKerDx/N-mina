@@ -1,0 +1,12 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 11: los settings viven aquí. En Windows el virtual store global crea
+# junctions que Node no resuelve, así que usamos un node_modules plano.
+nodeLinker: hoisted
+
+# pnpm 11 exige aprobar explícitamente los paquetes con scripts de instalación.
+# esbuild se resuelve con su paquete binario opcional, sin ejecutar scripts.
+allowBuilds:
+  esbuild: false

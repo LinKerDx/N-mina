@@ -1,0 +1,59 @@
+# Overlay opcional para respaldos dentro de la red de docker compose.
+# Uso:
+#   docker compose -f docker-compose.yml -f infra/backup/docker-compose.backup.yml up -d backup
+#
+# En producción NO uses este contenedor con "sleep 86400": programa backup.sh
+# con cron/systemd timer o un CronJob de Kubernetes y alerta si falla.
+services:
+  backup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nomina360-backup
+    init: true
+    environment:
+      DB_AUTH_HOST: db-auth
+      DB_AUTH_PORT: 5432
+      DB_RH_HOST: db-rh
+      DB_RH_PORT: 5432
+      DB_PRODUCCION_HOST: db-produccion
+      DB_PRODUCCION_PORT: 5432
+      DB_ADMIN_HOST: db-admin
+      DB_ADMIN_PORT: 5432
+      AUTH_DB_NAME: ${AUTH_DB_NAME:-auth_db}
+      AUTH_DB_USER: ${AUTH_DB_USER:-nomina_auth}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth_dev_pass}
+      RH_DB_NAME: ${RH_DB_NAME:-rh_db}
+      RH_DB_USER: ${RH_DB_USER:-nomina_rh}
+      RH_DB_PASSWORD: ${RH_DB_PASSWORD:-rh_dev_pass}
+      PRODUCCION_DB_NAME: ${PRODUCCION_DB_NAME:-produccion_db}
+      PRODUCCION_DB_USER: ${PRODUCCION_DB_USER:-nomina_produccion}
+      PRODUCCION_DB_PASSWORD: ${PRODUCCION_DB_PASSWORD:-produccion_dev_pass}
+      ADMIN_DB_NAME: ${ADMIN_DB_NAME:-admin_db}
+      ADMIN_DB_USER: ${ADMIN_DB_USER:-nomina_admin}
+      ADMIN_DB_PASSWORD: ${ADMIN_DB_PASSWORD:-admin_dev_pass}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-nomina360-backups}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      BACKUP_S3_REGION: ${BACKUP_S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-cambia-esta-frase}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      WORKDIR: /tmp/backups
+      REPORTE: /tmp/backups/reporte.json
+    volumes:
+      - backup_tmp:/tmp/backups
+    depends_on:
+      db-auth:
+        condition: service_healthy
+      db-rh:
+        condition: service_healthy
+      db-produccion:
+        condition: service_healthy
+      db-admin:
+        condition: service_healthy
+    networks:
+      - nomina-net
+
+volumes:
+  backup_tmp:

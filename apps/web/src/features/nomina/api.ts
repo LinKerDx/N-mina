@@ -1,4 +1,5 @@
 import {
+  descargarArchivo,
   peticion,
   type EstatusPeriodo,
   type Pagina,
@@ -45,4 +46,11 @@ export function recibosDePeriodo(id: string, senal?: AbortSignal): Promise<Recib
 
 export function esPeriodoCalculable(estatus: EstatusPeriodo): boolean {
   return estatus === 'BORRADOR';
+}
+
+/**
+ * Descarga el recibo individual en PDF (datos del trabajador + desglose).
+ */
+export function descargarReciboPdf(reciboId: string, numeroEmpleado: string): Promise<string> {
+  return descargarArchivo(`/api/rh/recibos/${reciboId}/pdf`, `recibo-${numeroEmpleado}.pdf`);
 }

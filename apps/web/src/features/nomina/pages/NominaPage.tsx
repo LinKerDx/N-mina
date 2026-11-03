@@ -20,11 +20,12 @@ import {
   Tarjeta,
   tonoPorEstatus,
 } from '@nomina360/ui';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type MouseEvent } from 'react';
 import {
   calcularPeriodo,
   cerrarPeriodo,
   crearPeriodo,
+  descargarReciboPdf,
   listarPeriodos,
   recibosDePeriodo,
 } from '@/features/nomina/api';
@@ -361,6 +362,23 @@ function ListaRecibos({ periodoId }: { periodoId: string }) {
 }
 
 function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
+  const [descargando, setDescargando] = useState(false);
+  const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
+
+  async function descargarPdf(evento: MouseEvent<HTMLButtonElement>) {
+    evento.preventDefault();
+    evento.stopPropagation();
+    setDescargando(true);
+    setErrorDescarga(null);
+    try {
+      await descargarReciboPdf(recibo.id, recibo.numeroEmpleado);
+    } catch (excepcion) {
+      setErrorDescarga(mensajeDeError(excepcion));
+    } finally {
+      setDescargando(false);
+    }
+  }
+
   return (
     <li className="rounded-xl border border-white/10 bg-white/[0.02]">
       <details className="group">
@@ -371,7 +389,7 @@ function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
               {recibo.numeroEmpleado} · {recibo.diasPagados} días pagados
             </p>
           </div>
-          <div className="flex items-center gap-4 text-right">
+          <div className="flex items-center gap-3 text-right">
             <div className="hidden sm:block">
               <p className="text-[10px] uppercase tracking-wider text-slate-500">Percepciones</p>
               <p className="text-xs text-slate-300">{moneda(recibo.totalPercepciones)}</p>
@@ -384,12 +402,28 @@ function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
               <p className="text-[10px] uppercase tracking-wider text-slate-500">Neto</p>
               <p className="text-sm font-semibold text-brand-300">{moneda(recibo.neto)}</p>
             </div>
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              cargando={descargando}
+              onClick={(evento) => void descargarPdf(evento)}
+              iconoIzquierda={<Icono nombre="descargar" className="size-3.5" />}
+              title="Descargar recibo en PDF con datos del trabajador"
+            >
+              PDF
+            </Boton>
             <Icono
               nombre="flecha"
               className="size-4 rotate-90 text-slate-500 transition group-open:-rotate-90"
             />
           </div>
         </summary>
+
+        {errorDescarga ? (
+          <p role="alert" className="px-4 pt-3 text-xs text-rose-300">
+            {errorDescarga}
+          </p>
+        ) : null}
 
         <div className="border-t border-white/5 px-4 py-3">
           <table className="w-full text-xs">

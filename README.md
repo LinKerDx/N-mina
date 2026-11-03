@@ -16,6 +16,7 @@ con **una base de datos PostgreSQL por área**.
 | --- | --- | --- |
 | Autenticación | Login JWT, refresh rotativo, roles por área | `backend/services/auth-service` |
 | Recursos Humanos | Empleados, incidencias, periodos, cálculo de ISR/IMSS, recibos | `backend/services/rh-service` |
+| Recibos PDF | Recibo con datos completos del trabajador y desglose de percepciones/deducciones | `backend/services/rh-service/.../ReciboPdfService.java` |
 | Producción | Centros de trabajo, turnos, horas, aprobación y evento a RH | `backend/services/produccion-service` |
 | Administración | Centros de costo, presupuesto, proveedores, pagos | `backend/services/administracion-service` |
 | Borde | Ruteo, CORS, validación de JWT, correlation ID | `backend/services/api-gateway` |
@@ -121,7 +122,8 @@ Los usuarios se crean al primer arranque de `auth-service` (desactívalo con
 ### Recorrido sugerido
 
 1. Entra como `rh@nomina360.mx` → **Nómina** → abre *Enero 2026* → **Calcular**.
-2. Revisa **Ver recibos**: percepciones, ISR, IMSS y neto por empleado.
+2. Revisa **Ver recibos**: percepciones, ISR, IMSS y neto por empleado. El botón
+   **PDF** de cada recibo descarga el documento con los datos del trabajador.
 3. Entra como `produccion@nomina360.mx` → **Producción** → aprueba un registro con horas extra.
 4. Vuelve a RH: las horas se integran como incidencia vía RabbitMQ (evento idempotente).
 5. Entra como `admin.finanzas@nomina360.mx` → **Administración** → registra un pago y observa
@@ -249,6 +251,7 @@ El stack completo se levantó y probó en Windows con Docker Desktop (11 contene
 | Producción → RH | Evento por RabbitMQ convertido en incidencia idempotente |
 | Presupuesto | Pago descuenta disponible; excedido devuelve 422 `PRESUPUESTO_EXCEDIDO` |
 | Seguridad | 401 sin token, 403 por rol, 409 al recalcular, 422 de negocio |
+| Recibo PDF | 200 `application/pdf`, 11 KB, datos del trabajador + desglose + neto |
 | Web y Swagger | Web 200 con bundle; OpenAPI 200 en RH |
 
 ## Próximos pasos sugeridos

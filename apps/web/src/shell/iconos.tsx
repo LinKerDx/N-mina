@@ -18,7 +18,8 @@ export type NombreIcono =
   | 'dinero'
   | 'reloj'
   | 'alerta'
-  | 'usuario';
+  | 'usuario'
+  | 'descargar';
 
 const TRAZOS: Record<NombreIcono, string[]> = {
   tablero: ['M3 3h7v7H3z', 'M14 3h7v4h-7z', 'M14 11h7v10h-7z', 'M3 14h7v7H3z'],
@@ -60,6 +61,7 @@ const TRAZOS: Record<NombreIcono, string[]> = {
     'M12 17h.01',
   ],
   usuario: ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'],
+  descargar: ['M12 3v12', 'M7 10l5 5 5-5', 'M5 21h14'],
 };
 
 export function Icono({ nombre, className }: { nombre: NombreIcono; className?: string }) {

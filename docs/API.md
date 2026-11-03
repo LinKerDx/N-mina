@@ -75,6 +75,7 @@ Claims del access token: `sub` (UUID), `email`, `rol`, `area`, `iss`, `iat`, `ex
 | POST | `/api/rh/periodos/{id}/calcular` | ADMIN, RH | Calcula recibos |
 | POST | `/api/rh/periodos/{id}/cerrar` | ADMIN, RH | Cierra periodo calculado |
 | GET | `/api/rh/periodos/{id}/recibos` | ADMIN, RH | Recibos con conceptos |
+| GET | `/api/rh/recibos/{id}/pdf` | ADMIN, RH | Recibo en PDF con datos del trabajador y desglose |
 | POST | `/api/rh/incidencias` | ADMIN, RH | Registra incidencia (201) |
 | GET | `/api/rh/incidencias?empleadoId=&desde=&hasta=` | ADMIN, RH | Lista incidencias |
 | GET | `/api/rh/resumen` | autenticado | KPIs del tablero |
@@ -152,6 +153,20 @@ Recibo:
   ]
 }
 ```
+
+### Recibo en PDF
+
+```bash
+curl -s -OJ -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/rh/recibos/<RECIBO_ID>/pdf
+```
+
+Respuesta `200` con `Content-Type: application/pdf` y
+`Content-Disposition: attachment; filename*=UTF-8''recibo-E-001-Enero-2026.pdf`.
+El PDF incluye número de empleado, nombre, CURP, RFC, NSS, correo, teléfono,
+departamento, puesto, tipo de contrato, fecha de ingreso, salario diario, estatus,
+días pagados, periodo, las tablas de percepciones y deducciones con subtotales y el
+neto a pagar. Sin token responde `401`.
 
 ### Incidencia
 

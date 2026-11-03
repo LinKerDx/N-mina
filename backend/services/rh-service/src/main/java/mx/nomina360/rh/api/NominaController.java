@@ -9,8 +9,13 @@ import mx.nomina360.rh.dto.RespuestaPeriodo;
 import mx.nomina360.rh.dto.RespuestaRecibo;
 import mx.nomina360.rh.dto.SolicitudPeriodo;
 import mx.nomina360.rh.servicio.NominaService;
+import mx.nomina360.rh.servicio.ReciboPdfService;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,9 +37,11 @@ import java.util.UUID;
 public class NominaController {
 
     private final NominaService servicio;
+    private final ReciboPdfService servicioPdf;
 
-    public NominaController(NominaService servicio) {
+    public NominaController(NominaService servicio, ReciboPdfService servicioPdf) {
         this.servicio = servicio;
+        this.servicioPdf = servicioPdf;
     }
 
     @Operation(summary = "Lista los periodos de nomina")
@@ -68,5 +76,21 @@ public class NominaController {
     @GetMapping("/periodos/{id}/recibos")
     public List<RespuestaRecibo> recibos(@PathVariable UUID id) {
         return servicio.recibosDePeriodo(id);
+    }
+
+    @Operation(summary = "Descarga el recibo en PDF con el desglose y los datos del trabajador")
+    @GetMapping("/recibos/{id}/pdf")
+    public ResponseEntity<byte[]> reciboPdf(@PathVariable UUID id) {
+        ReciboPdfService.DocumentoPdf documento = servicioPdf.generar(id);
+
+        ContentDisposition disposicion = ContentDisposition.attachment()
+                .filename(documento.nombreArchivo(), StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposicion.toString())
+                .contentLength(documento.contenido().length)
+                .body(documento.contenido());
     }
 }

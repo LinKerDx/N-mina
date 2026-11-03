@@ -132,8 +132,7 @@ async function construirError(respuesta: Response): Promise<ErrorApi> {
   );
 }
 
-async function renovarToken(): Promise<boolean> {
-  const token = refreshTokenActual();
+async function renovarToken(): Promise<boolean> {  const token = refreshTokenActual();
   if (!token) {
     return false;
   }
@@ -165,4 +164,56 @@ export function construirQuery(
   }
   const texto = busqueda.toString();
   return texto ? `?${texto}` : '';
+}
+
+/**
+ * Descarga un archivo protegido (por ejemplo el recibo en PDF) respetando el
+ * JWT y el refresco transparente. Devuelve el nombre con el que se guardó.
+ */
+export async function descargarArchivo(ruta: string, nombreSugerido: string): Promise<string> {
+  const solicitar = () => {
+    const token = accessToken();
+    return fetch(`${baseUrl}${ruta}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  };
+
+  let respuesta = await solicitar();
+  if (respuesta.status === 401) {
+    if (await renovarToken()) {
+      respuesta = await solicitar();
+    }
+  }
+  if (!respuesta.ok) {
+    throw await construirError(respuesta);
+  }
+
+  const nombre =
+    nombreDesdeDisposicion(respuesta.headers.get('Content-Disposition')) ?? nombreSugerido;
+  const blob = await respuesta.blob();
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+  return nombre;
+}
+
+function nombreDesdeDisposicion(cabecera: string | null): string | null {
+  if (!cabecera) {
+    return null;
+  }
+  const extendido = /filename\*=UTF-8''([^;]+)/i.exec(cabecera);
+  if (extendido?.[1]) {
+    try {
+      return decodeURIComponent(extendido[1].trim());
+    } catch {
+      return extendido[1].trim();
+    }
+  }
+  const simple = /filename="?([^";]+)"?/i.exec(cabecera);
+  return simple?.[1]?.trim() ?? null;
 }

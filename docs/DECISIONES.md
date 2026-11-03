@@ -197,6 +197,24 @@ en runners de GitHub (no alcanzan bases privadas) y requieren mantener ese runne
 
 ---
 
+## ADR-015 · Recibo de nómina en PDF generado en el backend
+
+**Contexto**: se requiere un PDF por recibo con el desglose y **todos los datos del
+trabajador** (CURP, RFC, NSS, puesto, departamento, salario). Esos datos personales viven en
+`rh_db` y no conviene exponerlos en el JSON del frontend sólo para imprimirlos.
+
+**Decisión**: `rh-service` genera el PDF con **OpenPDF** (licencia LGPL) en
+`ReciboPdfService`, expuesto como `GET /api/rh/recibos/{id}/pdf` (rol ADMIN/RH) con
+`Content-Disposition: attachment`. El frontend descarga el binario autenticado con
+`descargarArchivo` de `@nomina360/core`, que respeta el JWT y el refresco de sesión.
+
+**Consecuencias**: el documento es consistente entre usuarios y no depende del navegador; los
+datos sensibles nunca salen por la API JSON. Coste: una dependencia Java más y una plantilla
+que mantener cuando cambien los conceptos. Alternativa descartada: jsPDF en el cliente, que
+obligaría a enviar CURP/RFC/NSS al navegador y sumaría ~150 KB al bundle.
+
+---
+
 ## Pendientes conscientes
 
 | Tema | Estado | Cuándo abordarlo |

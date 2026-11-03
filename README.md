@@ -65,13 +65,35 @@ Detalle completo: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) · Decisiones: [d
 
 ## Arranque rápido
 
-Requisitos: Docker Desktop (o Docker + Compose v2). Para desarrollo sin Docker, ver
-[docs/DESARROLLO.md](docs/DESARROLLO.md).
+Requisitos: Docker Desktop (o Docker + Compose v2) y Node 22+. Para desarrollo sin Docker,
+ver [docs/DESARROLLO.md](docs/DESARROLLO.md).
+
+```bash
+pnpm install                  # una sola vez
+pnpm nomina:doctor            # revisa Node, pnpm, Docker, JDK y Maven
+pnpm nomina:up                # crea .env, construye y levanta todo
+```
+
+`nomina:up` espera a que los servicios respondan y te imprime las URLs. Equivale a:
 
 ```bash
 cp .env.example .env          # cambia JWT_SECRET y contraseñas
 docker compose up --build -d
 ```
+
+| Script | Para qué |
+| --- | --- |
+| `pnpm nomina:up` | Levanta el stack completo (web + API + 4 bases + RabbitMQ) |
+| `pnpm nomina:dev` | Bases en Docker y microservicios/Vite en local (recarga en caliente) |
+| `pnpm nomina:check` | `mvn verify` + lint + typecheck + tests + build |
+| `pnpm nomina:doctor` | Diagnóstico de requisitos |
+| `pnpm nomina:status` / `pnpm nomina:logs rh-service` | Estado y logs |
+| `pnpm nomina:down` (`--datos`) | Detiene el stack (y borra los datos) |
+| `pnpm nomina:backup` | Respaldo cifrado de las cuatro bases |
+
+Prefijo `nomina:` a propósito: `pnpm up` y `pnpm doctor` son comandos nativos de pnpm y no
+deben confundirse. Detalle de cada comando: [`scripts/README.md`](scripts/README.md). En
+Linux/macOS los mismos comandos funcionan igual (el CLI es Node, no PowerShell).
 
 | Servicio | URL |
 | --- | --- |
@@ -143,6 +165,7 @@ nomina360/
 │   ├── pom.xml                     # reactor Maven (multi-módulo)
 │   └── Dockerfile                  # imagen multi-stage compartida
 ├── infra/backup/                   # scripts de respaldo, cifrado, simulacro y pgBackRest
+├── scripts/                        # CLI de operación (up, dev, check, doctor, logs, backup)
 ├── docs/                           # arquitectura, API, decisiones, desarrollo, respaldos
 ├── .github/workflows/              # CI backend/frontend, imágenes, respaldo, simulacro
 └── docker-compose.yml              # 4 BD + RabbitMQ + 5 servicios + web

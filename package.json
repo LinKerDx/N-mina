@@ -10,6 +10,14 @@
     "pnpm": ">=10"
   },
   "scripts": {
+    "nomina:up": "node scripts/nomina.mjs up",
+    "nomina:down": "node scripts/nomina.mjs down",
+    "nomina:dev": "node scripts/nomina.mjs dev",
+    "nomina:check": "node scripts/nomina.mjs check",
+    "nomina:doctor": "node scripts/nomina.mjs doctor",
+    "nomina:status": "node scripts/nomina.mjs status",
+    "nomina:logs": "node scripts/nomina.mjs logs",
+    "nomina:backup": "node scripts/nomina.mjs backup",
     "dev": "turbo run dev --parallel",
     "dev:web": "pnpm --filter @nomina360/web dev",
     "build": "turbo run build",

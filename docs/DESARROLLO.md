@@ -35,7 +35,28 @@ pnpm install                  # dependencias del frontend y paquetes internos
 
 ## 3. Levantar todo con Docker
 
+La forma más corta es el CLI de operación:
+
 ```bash
+pnpm nomina:doctor     # comprueba Node, pnpm, Docker, JDK y Maven
+pnpm nomina:up         # crea .env si falta, construye y levanta el stack
+pnpm nomina:status     # estado de los contenedores
+pnpm nomina:logs rh-service
+pnpm nomina:down       # detiene (--datos borra volúmenes)
+```
+
+Con flags (o sin pnpm, usando el CLI directamente):
+
+```bash
+node scripts/nomina.mjs check --rapido
+node scripts/nomina.mjs dev --solo-infra
+pnpm nomina:check -- --backend
+```
+
+Equivalente manual:
+
+```bash
+cp .env.example .env
 docker compose up --build -d
 docker compose ps
 docker compose logs -f rh-service

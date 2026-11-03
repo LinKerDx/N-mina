@@ -9,6 +9,7 @@ build/
 coverage/
 *.tsbuildinfo
 .tmp/
+.dev-pids.json
 
 # Entorno
 .env

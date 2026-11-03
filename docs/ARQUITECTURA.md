@@ -233,15 +233,22 @@ sequenceDiagram
 - **Autorización por rol** con `@PreAuthorize`; el menú del frontend se filtra por rol, pero la
   decisión real está en el servidor.
 
-| Recurso | ADMIN | RH | PRODUCCIÓN | ADMINISTRACIÓN |
-| --- | :-: | :-: | :-: | :-: |
-| `/api/auth/me` | ✅ | ✅ | ✅ | ✅ |
-| `/api/rh/resumen` | ✅ | ✅ | ✅ | ✅ |
-| Empleados (CRUD) | ✅ | ✅ | ❌ | ❌ |
-| Catálogo de empleados activos | ✅ | ✅ | ✅ | ❌ |
-| Periodos y cálculo | ✅ | ✅ | ❌ | ❌ |
-| Registros de horas | ✅ | ❌ | ✅ | ❌ |
-| Presupuesto y pagos | ✅ | ❌ | ❌ | ✅ |
+| Recurso | ADMIN | RH | PRODUCCIÓN | ADMINISTRACIÓN | EMPLEADO |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| `/api/auth/me` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `/api/rh/resumen` (tablero) | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Empleados (CRUD) | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Catálogo de empleados activos | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Periodos y cálculo | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Registros de horas | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Presupuesto y pagos | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Mi nómina (autoservicio) | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+El portal del empleado resuelve la identidad por el **correo del token** contra
+`empleados.email` (ambas bases comparten el correo corporativo). No hay una tabla de
+credenciales en `rh_db` ni un `empleado_id` en `auth_db`: se evita duplicar identidad entre
+microservicios. Toda consulta se filtra por el empleado autenticado y un recibo ajeno se
+reporta como inexistente (`404`) en lugar de `403`, para no filtrar información.
 
 Otros controles: CORS restringido a orígenes configurados, `X-Correlation-Id` en todas las
 respuestas, mensajes de error que no filtran detalles internos, `open-in-view=false`, y
@@ -263,6 +270,7 @@ src/
     ├── dashboard/
     ├── empleados/       # api · components · pages
     ├── nomina/
+    ├── mi-nomina/       # portal del empleado: recibos, desglose y PDF
     ├── produccion/
     └── administracion/
 ```

@@ -237,6 +237,57 @@ Errores de negocio del módulo: `SIN_PRESUPUESTO`, `PRESUPUESTO_EXCEDIDO`,
 
 ---
 
+## Portal del empleado (`rh-service`)
+
+Requiere el rol `EMPLEADO`. La identidad se resuelve con el **correo del token** contra
+`empleados.email` en `rh_db`; todas las consultas se filtran por ese empleado y un recibo de
+otra persona responde `404` para no revelar su existencia.
+
+| Método | Ruta | Rol | Descripción |
+| --- | --- | --- | --- |
+| GET | `/api/rh/mi-nomina/perfil` | EMPLEADO | Datos personales y laborales propios |
+| GET | `/api/rh/mi-nomina/resumen` | EMPLEADO | Acumulados y último pago |
+| GET | `/api/rh/mi-nomina/recibos` | EMPLEADO | Historial de recibos propios |
+| GET | `/api/rh/mi-nomina/recibos/{id}` | EMPLEADO | Desglose del recibo propio |
+| GET | `/api/rh/mi-nomina/recibos/{id}/pdf` | EMPLEADO | Recibo propio en PDF |
+
+```bash
+curl -s -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ana.lopez@nomina360.mx","password":"Nomina360!"}'
+
+curl -s http://localhost:8080/api/rh/mi-nomina/recibos \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+[
+  {
+    "id": "…",
+    "periodo": {
+      "id": "…",
+      "nombre": "Enero 2026",
+      "tipo": "MENSUAL",
+      "fechaInicio": "2026-01-01",
+      "fechaFin": "2026-01-31",
+      "fechaPago": "2026-01-31"
+    },
+    "diasPagados": 31.0,
+    "totalPercepciones": 14287.5,
+    "totalDeducciones": 1755.26,
+    "neto": 12532.24,
+    "estatus": "CALCULADO",
+    "calculadoEn": "2026-11-03T12:17:44Z"
+  }
+]
+```
+
+`GET /api/rh/mi-nomina/recibos/{id}` agrega `empleado` (perfil completo) y `conceptos`
+(`tipo`, `clave`, `descripcion`, `importe`, `gravable`). El PDF usa el mismo generador del
+recibo de RH, pero solo después de comprobar la propiedad del recibo.
+
+---
+
 ## Operación
 
 | Método | Ruta | Descripción |

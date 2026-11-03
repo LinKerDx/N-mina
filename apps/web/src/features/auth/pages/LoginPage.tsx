@@ -12,12 +12,14 @@ import {
 } from '@/features/auth/animaciones/login';
 import { useSesion } from '@/features/auth/contexto/SesionContexto';
 import { mensajeDeError } from '@/shared/lib/errores';
+import { rutaInicio } from '@/shared/lib/navegacion';
 
 const CUENTAS_DEMO = [
   { rol: 'Administración', email: 'admin@nomina360.mx' },
   { rol: 'Recursos Humanos', email: 'rh@nomina360.mx' },
   { rol: 'Producción', email: 'produccion@nomina360.mx' },
   { rol: 'Finanzas', email: 'admin.finanzas@nomina360.mx' },
+  { rol: 'Empleada', email: 'ana.lopez@nomina360.mx' },
 ];
 
 export function LoginPage() {
@@ -104,9 +106,10 @@ export function LoginPage() {
     setErrores({});
     setEnviando(true);
     try {
-      await iniciar(resultado.data);
+      const usuario = await iniciar(resultado.data);
       await animarSalidaLogin(formularioRef.current);
-      const destino = (ubicacion.state as { desde?: string } | null)?.desde ?? '/tablero';
+      const destino =
+        (ubicacion.state as { desde?: string } | null)?.desde ?? rutaInicio(usuario.rol);
       navegar(destino, { replace: true });
     } catch (excepcion) {
       setErrorGeneral(mensajeDeError(excepcion));
@@ -124,7 +127,7 @@ export function LoginPage() {
   }
 
   if (!cargando && usuario) {
-    return <Navigate to="/tablero" replace />;
+    return <Navigate to={rutaInicio(usuario.rol)} replace />;
   }
 
   return (

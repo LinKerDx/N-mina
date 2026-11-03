@@ -9,6 +9,7 @@ public final class Roles {
     public static final String RH = "RH";
     public static final String PRODUCCION = "PRODUCCION";
     public static final String ADMINISTRACION = "ADMINISTRACION";
+    public static final String EMPLEADO = "EMPLEADO";
 
     public static String autoridad(String rol) {
         return "ROLE_" + rol;

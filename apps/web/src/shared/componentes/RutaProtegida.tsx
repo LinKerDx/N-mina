@@ -1,6 +1,7 @@
 import type { Rol } from '@nomina360/core';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSesion } from '@/features/auth/contexto/SesionContexto';
+import { rutaInicio } from '@/shared/lib/navegacion';
 import { Cargador } from '@nomina360/ui';
 
 export function RutaProtegida() {
@@ -26,7 +27,7 @@ export function RutaPermitida({ roles }: { roles: Rol[] }) {
   const { usuario } = useSesion();
 
   if (usuario && !roles.includes(usuario.rol)) {
-    return <Navigate to="/tablero" replace />;
+    return <Navigate to={rutaInicio(usuario.rol)} replace />;
   }
 
   return <Outlet />;

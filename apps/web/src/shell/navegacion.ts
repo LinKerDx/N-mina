@@ -11,6 +11,13 @@ export interface ItemNavegacion {
 
 export const NAVEGACION: ItemNavegacion[] = [
   {
+    ruta: '/mi-nomina',
+    etiqueta: 'Mi nómina',
+    descripcion: 'Tus recibos y desglose',
+    icono: 'nomina',
+    roles: ['EMPLEADO'],
+  },
+  {
     ruta: '/tablero',
     etiqueta: 'Tablero',
     descripcion: 'Indicadores generales de nómina',

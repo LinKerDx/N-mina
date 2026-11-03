@@ -117,6 +117,8 @@ export function tituloRol(rol: string): string {
       return 'Producción';
     case 'ADMINISTRACION':
       return 'Administración';
+    case 'EMPLEADO':
+      return 'Empleado';
     default:
       return rol;
   }

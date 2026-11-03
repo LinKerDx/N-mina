@@ -13,6 +13,8 @@ public interface ReciboNominaRepository extends JpaRepository<ReciboNomina, UUID
 
     List<ReciboNomina> findByPeriodoIdOrderByNombreEmpleadoAsc(UUID periodoId);
 
+    List<ReciboNomina> findByEmpleadoIdOrderByCalculadoEnDesc(UUID empleadoId);
+
     long countByPeriodoId(UUID periodoId);
 
     void deleteByPeriodoId(UUID periodoId);

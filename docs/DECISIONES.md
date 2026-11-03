@@ -215,6 +215,25 @@ obligaría a enviar CURP/RFC/NSS al navegador y sumaría ~150 KB al bundle.
 
 ---
 
+## ADR-016 · Portal del empleado con identidad por correo
+
+**Contexto**: los empleados necesitan consultar su propia nómina, pero las credenciales viven
+en `auth_db` y las fichas laborales en `rh_db`. Crear un `empleado_id` en `usuarios` obligaría
+a que `auth-service` conociera identificadores de otro dominio y a mantenerlos sincronizados.
+
+**Decisión**: se añade el rol `EMPLEADO` y el portal resuelve la identidad con el **correo del
+token** contra `empleados.email`. Los endpoints `/api/rh/mi-nomina/**` filtran siempre por el
+empleado autenticado y verifican la propiedad del recibo antes de devolver datos o el PDF. Un
+recibo ajeno responde `404`.
+
+**Consecuencias**: no se duplica identidad entre servicios y el aislamiento es explícito en el
+caso de uso. Coste: el correo debe coincidir entre la cuenta y la ficha (se documenta y se
+valida al dar de alta), y si un empleado cambia de correo hay que actualizar ambos registros.
+Alternativa descartada: incluir `empleadoId` en el JWT, que acopla `auth-service` a datos de
+RH y obliga a reemitir tokens al cambiar de puesto o correo.
+
+---
+
 ## Pendientes conscientes
 
 | Tema | Estado | Cuándo abordarlo |

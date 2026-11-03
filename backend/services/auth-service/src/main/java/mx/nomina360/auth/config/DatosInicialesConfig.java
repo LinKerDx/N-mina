@@ -14,8 +14,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.List;
 
 /**
- * Crea usuarios de demostracion (una cuenta por area) la primera vez que arranca
- * el servicio. Desactivalo con NOMINA_DATOS_INICIALES_ENABLED=false.
+ * Crea las cuentas de demostracion que falten (idempotente por correo).
+ *
+ * <p>Incluye cuentas de empleado cuyo correo coincide con el del empleado en
+ * {@code rh_db}; asi el portal de autoservicio puede resolver "mi nomina"
+ * sin duplicar identidades entre microservicios.
+ *
+ * <p>Desactivalo con {@code NOMINA_DATOS_INICIALES_ENABLED=false}.
  */
 @Configuration
 public class DatosInicialesConfig {
@@ -28,17 +33,32 @@ public class DatosInicialesConfig {
                                                  PasswordEncoder passwordEncoder,
                                                  @Value("${nomina.datos-iniciales.enabled:true}") boolean habilitado) {
         return args -> {
-            if (!habilitado || usuarios.count() > 0) {
+            if (!habilitado) {
                 return;
             }
 
-            usuarios.saveAll(List.of(
+            List<Usuario> demo = List.of(
                     usuario("admin@nomina360.mx", "Ana Admin", Roles.ADMIN, "Administracion", passwordEncoder),
                     usuario("rh@nomina360.mx", "Rosa Hernandez", Roles.RH, "Recursos Humanos", passwordEncoder),
                     usuario("produccion@nomina360.mx", "Pedro Produccion", Roles.PRODUCCION, "Produccion", passwordEncoder),
-                    usuario("admin.finanzas@nomina360.mx", "Frida Finanzas", Roles.ADMINISTRACION, "Administracion", passwordEncoder)));
+                    usuario("admin.finanzas@nomina360.mx", "Frida Finanzas", Roles.ADMINISTRACION, "Administracion", passwordEncoder),
+                    usuario("ana.lopez@nomina360.mx", "Ana Lopez Garcia", Roles.EMPLEADO, "Produccion", passwordEncoder),
+                    usuario("luis.ramirez@nomina360.mx", "Luis Ramirez Soto", Roles.EMPLEADO, "Produccion", passwordEncoder),
+                    usuario("marta.sanchez@nomina360.mx", "Marta Sanchez Ruiz", Roles.EMPLEADO, "Administracion", passwordEncoder));
 
-            log.info("Usuarios demo creados. Contrasena inicial: {} (cambiala en produccion)", PASSWORD_DEMO);
+            int creados = 0;
+            for (Usuario candidato : demo) {
+                if (usuarios.existsByEmailIgnoreCase(candidato.getEmail())) {
+                    continue;
+                }
+                usuarios.save(candidato);
+                creados++;
+            }
+
+            if (creados > 0) {
+                log.info("Usuarios demo creados: {}. Contrasena inicial: {} (cambiala en produccion)",
+                        creados, PASSWORD_DEMO);
+            }
         };
     }
 

@@ -13,7 +13,7 @@ import { cerrarSesionRemota, iniciarSesion, obtenerPerfil } from '@/features/aut
 interface ContextoSesion {
   usuario: Usuario | null;
   cargando: boolean;
-  iniciar: (datos: DatosLogin) => Promise<void>;
+  iniciar: (datos: DatosLogin) => Promise<Usuario>;
   cerrar: () => Promise<void>;
 }
 
@@ -64,6 +64,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     const sesion = await iniciarSesion(datos);
     guardarSesion(sesion);
     setUsuario(sesion.usuario);
+    return sesion.usuario;
   }, []);
 
   const cerrar = useCallback(async () => {

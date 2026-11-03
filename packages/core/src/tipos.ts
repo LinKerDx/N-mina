@@ -3,7 +3,7 @@
  * Los importes viajan como number (el backend usa BigDecimal con 2 decimales).
  */
 
-export type Rol = 'ADMIN' | 'RH' | 'PRODUCCION' | 'ADMINISTRACION';
+export type Rol = 'ADMIN' | 'RH' | 'PRODUCCION' | 'ADMINISTRACION' | 'EMPLEADO';
 
 export interface Usuario {
   id: string;
@@ -248,4 +248,60 @@ export interface ResumenAdministracion {
   disponible: number;
   pagosDelMes: number;
   montoPagadoMes: number;
+}
+
+// ---------------------------------------------------------------------------
+// Portal del empleado (autoservicio)
+// ---------------------------------------------------------------------------
+
+export interface MiPerfil {
+  id: string;
+  numeroEmpleado: string;
+  nombreCompleto: string;
+  curp: string | null;
+  rfc: string | null;
+  nss: string | null;
+  email: string | null;
+  telefono: string | null;
+  departamento: string | null;
+  puesto: string | null;
+  tipoContrato: string;
+  fechaIngreso: string;
+  salarioDiario: number;
+  estatus: string;
+}
+
+export interface MiPeriodo {
+  id: string;
+  nombre: string;
+  tipo: string;
+  fechaInicio: string;
+  fechaFin: string;
+  fechaPago: string;
+}
+
+export interface MiRecibo {
+  id: string;
+  periodo: MiPeriodo | null;
+  diasPagados: number;
+  totalPercepciones: number;
+  totalDeducciones: number;
+  neto: number;
+  estatus: string;
+  calculadoEn: string;
+}
+
+export interface MiReciboDetalle extends MiRecibo {
+  empleado: MiPerfil;
+  conceptos: ConceptoNomina[];
+}
+
+export interface MiResumenNomina {
+  totalRecibos: number;
+  totalPercepciones: number;
+  totalDeducciones: number;
+  totalNeto: number;
+  ultimoNeto: number;
+  ultimoPeriodo: string | null;
+  ultimaFechaPago: string | null;
 }

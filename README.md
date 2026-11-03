@@ -17,6 +17,7 @@ con **una base de datos PostgreSQL por área**.
 | Autenticación | Login JWT, refresh rotativo, roles por área | `backend/services/auth-service` |
 | Recursos Humanos | Empleados, incidencias, periodos, cálculo de ISR/IMSS, recibos | `backend/services/rh-service` |
 | Recibos PDF | Recibo con datos completos del trabajador y desglose de percepciones/deducciones | `backend/services/rh-service/.../ReciboPdfService.java` |
+| Portal del empleado | Rol `EMPLEADO`: “Mi nómina”, desglose, datos personales y PDF | `apps/web/src/features/mi-nomina` |
 | Producción | Centros de trabajo, turnos, horas, aprobación y evento a RH | `backend/services/produccion-service` |
 | Administración | Centros de costo, presupuesto, proveedores, pagos | `backend/services/administracion-service` |
 | Borde | Ruteo, CORS, validación de JWT, correlation ID | `backend/services/api-gateway` |
@@ -115,9 +116,15 @@ Linux/macOS los mismos comandos funcionan igual (el CLI es Node, no PowerShell).
 | Recursos Humanos | `rh@nomina360.mx` | `Nomina360!` |
 | Producción | `produccion@nomina360.mx` | `Nomina360!` |
 | Administración | `admin.finanzas@nomina360.mx` | `Nomina360!` |
+| Empleada (autoservicio) | `ana.lopez@nomina360.mx` | `Nomina360!` |
+| Empleado (autoservicio) | `luis.ramirez@nomina360.mx` | `Nomina360!` |
+| Empleada (autoservicio) | `marta.sanchez@nomina360.mx` | `Nomina360!` |
 
 Los usuarios se crean al primer arranque de `auth-service` (desactívalo con
 `NOMINA_DATOS_INICIALES_ENABLED=false`). **Cámbialos antes de usar datos reales.**
+
+Las cuentas de empleado comparten correo con su ficha de `rh_db`: con eso el portal resuelve
+"mi nómina" sin duplicar identidades entre microservicios.
 
 ### Recorrido sugerido
 
@@ -128,6 +135,8 @@ Los usuarios se crean al primer arranque de `auth-service` (desactívalo con
 4. Vuelve a RH: las horas se integran como incidencia vía RabbitMQ (evento idempotente).
 5. Entra como `admin.finanzas@nomina360.mx` → **Administración** → registra un pago y observa
    cómo se reduce el disponible del centro de costo.
+6. Entra como `ana.lopez@nomina360.mx` → **Mi nómina** → **Ver desglose** y descarga el PDF.
+   Ese rol solo ve sus propios recibos.
 
 ---
 
@@ -252,6 +261,8 @@ El stack completo se levantó y probó en Windows con Docker Desktop (11 contene
 | Presupuesto | Pago descuenta disponible; excedido devuelve 422 `PRESUPUESTO_EXCEDIDO` |
 | Seguridad | 401 sin token, 403 por rol, 409 al recalcular, 422 de negocio |
 | Recibo PDF | 200 `application/pdf`, 11 KB, datos del trabajador + desglose + neto |
+| Portal del empleado | Login `EMPLEADO`, perfil, 1 recibo con 4 conceptos y PDF 200 |
+| Aislamiento | Recibo de otro empleado → 404; RH en portal → 403; empleado en RH → 403 |
 | Web y Swagger | Web 200 con bundle; OpenAPI 200 en RH |
 
 ## Próximos pasos sugeridos

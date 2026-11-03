@@ -14,7 +14,8 @@ COPY packages/core/package.json packages/core/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/tsconfig/package.json packages/tsconfig/package.json
 
-RUN pnpm install --frozen-lockfile --filter @nomina360/web...
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --filter @nomina360/web...
 
 COPY . .
 RUN pnpm --filter @nomina360/web build

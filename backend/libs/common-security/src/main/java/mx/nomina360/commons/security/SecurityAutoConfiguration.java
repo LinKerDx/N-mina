@@ -31,6 +31,12 @@ public class SecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public ManejadorErroresSeguridad manejadorErroresSeguridad() {
+        return new ManejadorErroresSeguridad();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, ObjectMapper objectMapper) {
         return new JwtAuthenticationFilter(jwtService, objectMapper);
     }

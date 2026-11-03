@@ -33,7 +33,6 @@ const ES_WINDOWS = process.platform === 'win32';
 const LOGS = path.join(RAIZ, 'logs');
 const ARCHIVO_PIDS = path.join(RAIZ, '.dev-pids.json');
 
-const URL_GATEWAY = 'http://localhost:8080/actuator/health';
 const URL_WEB = 'http://localhost:8088/healthz';
 const PUERTOS_INFRA = [5433, 5434, 5435, 5436, 5672];
 
@@ -102,7 +101,7 @@ function dormir(ms) {
   return new Promise((resolver) => setTimeout(resolver, ms));
 }
 
-async function esperarHttp(url, { intentos = 120, intervalo = 2000, etiqueta = url } = {}) {
+async function esperarHttp(url, { intentos = 120, intervalo = 2000, etiqueta = url, silencioso = false } = {}) {
   for (let intento = 1; intento <= intentos; intento += 1) {
     try {
       const respuesta = await fetch(url, { signal: AbortSignal.timeout(2500) });
@@ -112,12 +111,34 @@ async function esperarHttp(url, { intentos = 120, intervalo = 2000, etiqueta = u
     } catch {
       // el servicio todavía no escucha; se reintenta
     }
-    if (intento % 5 === 0) {
+    if (!silencioso && intento % 5 === 0) {
       tenue(`   esperando ${etiqueta}… (${Math.round((intento * intervalo) / 1000)}s)`);
     }
     await dormir(intervalo);
   }
   return false;
+}
+
+const SERVICIOS_HTTP = [
+  ['auth-service', 'http://localhost:8081/actuator/health'],
+  ['rh-service', 'http://localhost:8082/actuator/health'],
+  ['produccion-service', 'http://localhost:8083/actuator/health'],
+  ['administracion-service', 'http://localhost:8084/actuator/health'],
+  ['api-gateway', 'http://localhost:8080/actuator/health'],
+];
+
+/**
+ * Espera a que TODOS los servicios respondan salud. El gateway puede estar
+ * arriba mientras auth todavía migra la base, así que no basta con uno.
+ */
+async function esperarServicios(intentos = 150) {
+  const resultados = await Promise.all(
+    SERVICIOS_HTTP.map(async ([nombre, url]) => ({
+      nombre,
+      listo: await esperarHttp(url, { etiqueta: nombre, intentos, silencioso: true }),
+    })),
+  );
+  return resultados.filter((resultado) => !resultado.listo).map((resultado) => resultado.nombre);
 }
 
 function puertoAbierto(puerto, host = '127.0.0.1') {
@@ -304,14 +325,15 @@ async function comandoUp() {
     process.exitCode = 1;
     return;
   }
-  info('Esperando a que el gateway y la web respondan…');
-  const gatewayOk = await esperarHttp(URL_GATEWAY, { etiqueta: 'gateway :8080', intentos: 150 });
-  const webOk = await esperarHttp(URL_WEB, { etiqueta: 'web :8088', intentos: 30 });
-  if (!gatewayOk) {
-    error('El gateway no respondió a tiempo. Revisa: node scripts/nomina.mjs logs');
+  info('Esperando a que los 5 servicios y la web respondan (la primera vez tarda ~40 s)…');
+  const pendientes = await esperarServicios();
+  if (pendientes.length > 0) {
+    error(`Sin respuesta: ${pendientes.join(', ')}`);
+    tenue('Revisa: node scripts/nomina.mjs logs <servicio>');
     process.exitCode = 1;
     return;
   }
+  const webOk = await esperarHttp(URL_WEB, { etiqueta: 'web :8088', intentos: 30 });
   if (!webOk) {
     aviso('La web aún no responde, pero el API ya está arriba.');
   }
@@ -402,10 +424,10 @@ async function comandoDev(flags) {
   }
   writeFileSync(ARCHIVO_PIDS, JSON.stringify(hijos, null, 2), 'utf8');
 
-  info('Esperando al gateway (puede tardar ~1 min la primera compilación)…');
-  const gatewayOk = await esperarHttp(URL_GATEWAY, { etiqueta: 'gateway :8080', intentos: 90 });
-  if (!gatewayOk) {
-    error('El gateway no respondió. Revisa logs/api-gateway.log');
+  info('Esperando a los 5 servicios (primera compilación ~1 min)…');
+  const pendientes = await esperarServicios(120);
+  if (pendientes.length > 0) {
+    error(`Sin respuesta: ${pendientes.join(', ')}. Revisa logs/<servicio>.log`);
   } else {
     ok('Backend arriba en http://localhost:8080');
   }

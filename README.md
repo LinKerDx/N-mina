@@ -235,8 +235,21 @@ La recomendación completa está en **[docs/RESPALDOS.md](docs/RESPALDOS.md)**. 
   una vez (inmutabilidad contable) y se corrige con un periodo nuevo.
 - El refresh de JWT se renueva por petición; para alta concurrencia conviene una cola de
   renovación o *grace period* de refresh tokens.
-- Las imágenes Docker no se validaron en esta máquina (Docker Desktop no estaba iniciado);
-  los archivos `docker-compose` sí pasan `docker compose config`.
+
+## Estado verificado
+
+El stack completo se levantó y probó en Windows con Docker Desktop (11 contenedores):
+
+| Verificación | Resultado |
+| --- | --- |
+| `pnpm nomina:up` | Construye y espera a los 5 servicios; login inmediato al terminar |
+| Contenedores | 11/11 `healthy` (4 BD, RabbitMQ, 5 servicios, gateway y web) |
+| Login JWT + `/me` | OK; roles y `X-Correlation-Id` propagados |
+| Cálculo de nómina | 8 recibos, ISR e IMSS coherentes, periodo pasa a `CALCULADO` |
+| Producción → RH | Evento por RabbitMQ convertido en incidencia idempotente |
+| Presupuesto | Pago descuenta disponible; excedido devuelve 422 `PRESUPUESTO_EXCEDIDO` |
+| Seguridad | 401 sin token, 403 por rol, 409 al recalcular, 422 de negocio |
+| Web y Swagger | Web 200 con bundle; OpenAPI 200 en RH |
 
 ## Próximos pasos sugeridos
 

@@ -1,6 +1,6 @@
-# ---------------------------------------------------------------------------
-# Nómina360 — stack completo de desarrollo.
-# Una instancia PostgreSQL por área (database-per-service).
+﻿# ---------------------------------------------------------------------------
+# NÃ³mina360 â€” stack completo de desarrollo.
+# Una instancia PostgreSQL por Ã¡rea (database-per-service).
 # ---------------------------------------------------------------------------
 name: nomina360
 
@@ -78,7 +78,7 @@ services:
       retries: 12
     networks: [nomina-net]
 
-  # ------------------------------- Mensajería -------------------------------
+  # ------------------------------- MensajerÃ­a -------------------------------
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: nomina360-rabbitmq
@@ -119,7 +119,7 @@ services:
       db-auth:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -151,7 +151,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -183,7 +183,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8083/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -210,7 +210,7 @@ services:
       db-admin:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8084/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -245,7 +245,7 @@ services:
       administracion-service:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -266,7 +266,7 @@ services:
       api-gateway:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -282,3 +282,4 @@ volumes:
 networks:
   nomina-net:
     driver: bridge
+

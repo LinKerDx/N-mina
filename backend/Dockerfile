@@ -17,12 +17,14 @@ COPY backend/services/rh-service/pom.xml backend/services/rh-service/pom.xml
 COPY backend/services/produccion-service/pom.xml backend/services/produccion-service/pom.xml
 COPY backend/services/administracion-service/pom.xml backend/services/administracion-service/pom.xml
 
-RUN mvn -B -ntp -f backend/pom.xml -pl services/${SERVICE} -am dependency:go-offline -DskipTests || true
+RUN --mount=type=cache,id=maven,sharing=locked,target=/root/.m2 \
+    mvn -B -ntp -f backend/pom.xml -pl services/${SERVICE} -am dependency:go-offline -DskipTests || true
 
 COPY backend/libs backend/libs
 COPY backend/services backend/services
 
-RUN mvn -B -ntp -f backend/pom.xml -pl services/${SERVICE} -am -DskipTests package
+RUN --mount=type=cache,id=maven,sharing=locked,target=/root/.m2 \
+    mvn -B -ntp -f backend/pom.xml -pl services/${SERVICE} -am -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
 
@@ -40,6 +42,6 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport -Djava.security.
 
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --retries=5 \
-  CMD wget -qO- "http://localhost:${SERVER_PORT:-8080}/actuator/health" || exit 1
+  CMD wget -qO- "http://127.0.0.1:${SERVER_PORT:-8080}/actuator/health" || exit 1
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

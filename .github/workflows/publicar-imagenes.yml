@@ -55,7 +55,7 @@ jobs:
 
       - name: Metadatos
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRO }}/${{ env.PROPIETARIO }}/nomina360-${{ matrix.service }}
           tags: |
@@ -101,7 +101,7 @@ jobs:
 
       - name: Metadatos
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRO }}/${{ env.PROPIETARIO }}/nomina360-web
           tags: |

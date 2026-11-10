@@ -42,9 +42,9 @@ public class DatosInicialesConfig {
                     usuario("rh@nomina360.mx", "Rosa Hernandez", Roles.RH, "Recursos Humanos", passwordEncoder),
                     usuario("produccion@nomina360.mx", "Pedro Produccion", Roles.PRODUCCION, "Produccion", passwordEncoder),
                     usuario("admin.finanzas@nomina360.mx", "Frida Finanzas", Roles.ADMINISTRACION, "Administracion", passwordEncoder),
-                    usuario("ana.lopez@nomina360.mx", "Ana Lopez Garcia", Roles.EMPLEADO, "Produccion", passwordEncoder),
-                    usuario("luis.ramirez@nomina360.mx", "Luis Ramirez Soto", Roles.EMPLEADO, "Produccion", passwordEncoder),
-                    usuario("marta.sanchez@nomina360.mx", "Marta Sanchez Ruiz", Roles.EMPLEADO, "Administracion", passwordEncoder));
+                    usuario("ana.lopez@nomina360.mx", "Ana Lopez Garcia", Roles.EMPLEADO, "Produccion", "E-001", passwordEncoder),
+                    usuario("luis.ramirez@nomina360.mx", "Luis Ramirez Soto", Roles.EMPLEADO, "Produccion", "E-002", passwordEncoder),
+                    usuario("marta.sanchez@nomina360.mx", "Marta Sanchez Ruiz", Roles.EMPLEADO, "Administracion", "E-003", passwordEncoder));
 
             int creados = 0;
             for (Usuario candidato : demo) {
@@ -63,11 +63,16 @@ public class DatosInicialesConfig {
     }
 
     private Usuario usuario(String email, String nombre, String rol, String area, PasswordEncoder encoder) {
+        return usuario(email, nombre, rol, area, null, encoder);
+    }
+
+    private Usuario usuario(String email, String nombre, String rol, String area, String numeroEmpleado, PasswordEncoder encoder) {
         Usuario usuario = new Usuario();
         usuario.setEmail(email);
         usuario.setNombreCompleto(nombre);
         usuario.setRol(rol);
         usuario.setArea(area);
+        usuario.setNumeroEmpleado(numeroEmpleado);
         usuario.setPasswordHash(encoder.encode(PASSWORD_DEMO));
         return usuario;
     }

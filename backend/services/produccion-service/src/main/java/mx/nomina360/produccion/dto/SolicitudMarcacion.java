@@ -12,6 +12,7 @@ import java.util.UUID;
 public record SolicitudMarcacion(
         @NotNull UUID empleadoId,
         @NotBlank @Size(max = 200) String empleadoNombre,
+        @Size(max = 20) String numeroEmpleado,
         @NotNull TipoMarcacion tipo,
         @NotNull OffsetDateTime ocurridoEn,
         @NotBlank @Size(max = 100) String dispositivoId,

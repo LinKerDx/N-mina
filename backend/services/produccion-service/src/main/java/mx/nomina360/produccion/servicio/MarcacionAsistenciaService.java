@@ -44,6 +44,7 @@ public class MarcacionAsistenciaService {
         MarcacionAsistencia marcacion = new MarcacionAsistencia();
         marcacion.setEmpleadoId(solicitud.empleadoId());
         marcacion.setEmpleadoNombre(solicitud.empleadoNombre().trim());
+        marcacion.setNumeroEmpleado(solicitud.numeroEmpleado() == null ? null : solicitud.numeroEmpleado().trim());
         marcacion.setTipo(solicitud.tipo());
         marcacion.setOcurridoEn(solicitud.ocurridoEn().toInstant());
         marcacion.setOrigen(OrigenMarcacion.DISPOSITIVO);
@@ -56,6 +57,14 @@ public class MarcacionAsistenciaService {
     public List<RespuestaMarcacion> listar(UUID empleadoId, Instant desde, Instant hasta) {
         return marcaciones.findByEmpleadoIdAndOcurridoEnBetweenOrderByOcurridoEnAsc(
                         empleadoId, desde, hasta).stream()
+                .map(RespuestaMarcacion::desde)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RespuestaMarcacion> listarPropias(String numeroEmpleado, Instant desde, Instant hasta) {
+        return marcaciones.findByNumeroEmpleadoAndOcurridoEnBetweenOrderByOcurridoEnAsc(
+                        numeroEmpleado, desde, hasta).stream()
                 .map(RespuestaMarcacion::desde)
                 .toList();
     }

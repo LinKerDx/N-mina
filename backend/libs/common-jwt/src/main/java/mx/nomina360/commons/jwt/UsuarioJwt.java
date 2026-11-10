@@ -10,7 +10,7 @@ import java.util.UUID;
  * @param rol   rol principal (ADMIN, RH, PRODUCCION, ADMINISTRACION)
  * @param area  area funcional asociada al usuario
  */
-public record UsuarioJwt(UUID id, String email, String rol, String area) {
+public record UsuarioJwt(UUID id, String email, String rol, String area, String numeroEmpleado) {
 
     public boolean tieneRol(String... rolesPermitidos) {
         if (rol == null) {

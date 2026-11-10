@@ -53,7 +53,7 @@ export function AppShell() {
           tabIndex={-1}
           className="flex-1 px-4 py-6 outline-none lg:px-8"
         >
-          <div className="mx-auto w-full max-w-7xl">
+          <div key={pathname} className="route-enter mx-auto w-full max-w-7xl">
             <Outlet />
           </div>
         </main>

@@ -19,6 +19,7 @@ export type NombreIcono =
   | 'reloj'
   | 'alerta'
   | 'usuario'
+  | 'chat'
   | 'descargar';
 
 const TRAZOS: Record<NombreIcono, string[]> = {
@@ -61,6 +62,12 @@ const TRAZOS: Record<NombreIcono, string[]> = {
     'M12 17h.01',
   ],
   usuario: ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'],
+  chat: [
+    'M21 11.5a8.5 8.5 0 0 1-12.2 7.6L3 21l1.9-5.8A8.5 8.5 0 1 1 21 11.5Z',
+    'M8 11h.01',
+    'M12 11h.01',
+    'M16 11h.01',
+  ],
   descargar: ['M12 3v12', 'M7 10l5 5 5-5', 'M5 21h14'],
 };
 

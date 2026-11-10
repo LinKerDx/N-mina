@@ -15,4 +15,7 @@ public interface MarcacionAsistenciaRepository extends JpaRepository<MarcacionAs
 
     List<MarcacionAsistencia> findByEmpleadoIdAndOcurridoEnBetweenOrderByOcurridoEnAsc(
             UUID empleadoId, Instant desde, Instant hasta);
+
+    List<MarcacionAsistencia> findByNumeroEmpleadoAndOcurridoEnBetweenOrderByOcurridoEnAsc(
+            String numeroEmpleado, Instant desde, Instant hasta);
 }

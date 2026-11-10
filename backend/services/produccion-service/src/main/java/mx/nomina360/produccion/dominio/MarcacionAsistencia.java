@@ -30,6 +30,9 @@ public class MarcacionAsistencia {
     @Column(name = "empleado_nombre", nullable = false, length = 200)
     private String empleadoNombre;
 
+    @Column(name = "numero_empleado", length = 20)
+    private String numeroEmpleado;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TipoMarcacion tipo;

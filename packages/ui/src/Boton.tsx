@@ -42,7 +42,7 @@ export function Boton({
     <button
       type={type}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition',
+        'inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-semibold transition',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950',
         'disabled:cursor-not-allowed disabled:opacity-60',
         TAMANOS[tamano],

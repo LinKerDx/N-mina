@@ -11,6 +11,8 @@ import { NominaPage } from '@/features/nomina/pages/NominaPage';
 import { ProduccionPage } from '@/features/produccion/pages/ProduccionPage';
 import { AdministracionPage } from '@/features/administracion/pages/AdministracionPage';
 import { MiNominaPage } from '@/features/mi-nomina/pages/MiNominaPage';
+import { AsistenciaPage } from '@/features/produccion/pages/AsistenciaPage';
+import { ChatPage } from '@/features/chat/ChatPage';
 
 function InicioRedirect() {
   const { usuario } = useSesion();
@@ -25,6 +27,8 @@ export function RutasApp() {
       <Route element={<RutaProtegida />}>
         <Route element={<AppShell />}>
           <Route index element={<InicioRedirect />} />
+          <Route path="asistencia" element={<AsistenciaPage />} />
+          <Route path="chat" element={<ChatPage />} />
 
           <Route
             element={<RutaPermitida roles={['ADMIN', 'RH', 'PRODUCCION', 'ADMINISTRACION']} />}

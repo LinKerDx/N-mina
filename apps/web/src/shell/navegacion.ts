@@ -18,6 +18,20 @@ export const NAVEGACION: ItemNavegacion[] = [
     roles: ['EMPLEADO'],
   },
   {
+    ruta: '/asistencia',
+    etiqueta: 'Asistencia',
+    descripcion: 'Calendario, entradas y eventos',
+    icono: 'reloj',
+    roles: ['ADMIN', 'RH', 'PRODUCCION', 'ADMINISTRACION', 'EMPLEADO'],
+  },
+  {
+    ruta: '/chat',
+    etiqueta: 'Chat',
+    descripcion: 'Mensajes y consultas internas',
+    icono: 'chat',
+    roles: ['ADMIN', 'RH', 'PRODUCCION', 'ADMINISTRACION', 'EMPLEADO'],
+  },
+  {
     ruta: '/tablero',
     etiqueta: 'Tablero',
     descripcion: 'Indicadores generales de nómina',

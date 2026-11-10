@@ -19,7 +19,7 @@ import {
   Tarjeta,
   tonoPorEstatus,
 } from '@nomina360/ui';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSesion } from '@/features/auth/contexto/SesionContexto';
 import {
   descargarMiReciboPdf,
@@ -37,6 +37,9 @@ import { ErrorCarga } from '@/shared/componentes/ErrorCarga';
 export function MiNominaPage() {
   const { usuario } = useSesion();
   const [reciboAbierto, setReciboAbierto] = useState<MiRecibo | null>(null);
+  const [tipoPeriodo, setTipoPeriodo] = useState<'TODOS' | 'SEMANAL' | 'QUINCENAL' | 'MENSUAL'>(
+    'TODOS',
+  );
 
   const perfil = useConsulta((senal) => miPerfil(senal), 'mi-perfil');
   const resumen = useConsulta((senal) => miResumen(senal), 'mi-resumen');
@@ -44,6 +47,16 @@ export function MiNominaPage() {
 
   const primerNombre = usuario?.nombreCompleto.split(' ')[0] ?? '';
   const ultimaFecha = resumen.datos?.ultimaFechaPago;
+  const recibosFiltrados = useMemo(
+    () =>
+      (recibos.datos ?? []).filter((recibo) => {
+        const tipo = recibo.periodo?.tipo;
+        if (tipoPeriodo === 'TODOS') return true;
+        if (tipoPeriodo === 'QUINCENAL') return tipo === 'QUINCENAL' || tipo === 'CATORCENAL';
+        return tipo === tipoPeriodo;
+      }),
+    [recibos.datos, tipoPeriodo],
+  );
 
   const columnas: Array<Columna<MiRecibo>> = [
     {
@@ -53,7 +66,7 @@ export function MiNominaPage() {
         <div>
           <p className="text-sm font-medium text-white">{fila.periodo?.nombre ?? 'Periodo'}</p>
           <p className="text-[11px] text-slate-500">
-            {fecha(fila.periodo?.fechaInicio)} — {fecha(fila.periodo?.fechaFin)}
+            {rangoPeriodo(fila.periodo?.fechaInicio, fila.periodo?.fechaFin)}
           </p>
         </div>
       ),
@@ -104,7 +117,7 @@ export function MiNominaPage() {
       alinear: 'derecha',
       render: (fila) => (
         <Boton variante="secundario" tamano="sm" onClick={() => setReciboAbierto(fila)}>
-          Ver desglose
+          Ver
         </Boton>
       ),
     },
@@ -164,11 +177,40 @@ export function MiNominaPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-        <Tarjeta>
+        <Tarjeta className="overflow-hidden">
           <EncabezadoTarjeta
             titulo="Mis recibos"
             descripcion="Selecciona un periodo para ver el desglose completo y descargar el PDF."
           />
+          <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-brand-500/[0.09] via-white/[0.025] to-transparent p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-100">Frecuencia de pago</p>
+              <p className="text-xs text-slate-500">Filtra tus recibos por tipo de periodo.</p>
+            </div>
+            <div
+              className="grid grid-cols-2 gap-2 sm:flex"
+              role="group"
+              aria-label="Filtrar recibos por frecuencia"
+            >
+              {(['TODOS', 'SEMANAL', 'QUINCENAL', 'MENSUAL'] as const).map((tipo) => (
+                <button
+                  key={tipo}
+                  type="button"
+                  aria-pressed={tipoPeriodo === tipo}
+                  onClick={() => setTipoPeriodo(tipo)}
+                  className={`rounded-xl px-4 py-2.5 text-xs font-semibold transition ${tipoPeriodo === tipo ? 'bg-brand-400 text-ink-950 shadow-[0_8px_24px_-12px_rgba(52,211,153,.8)]' : 'border border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]'}`}
+                >
+                  {tipo === 'TODOS'
+                    ? 'Todos'
+                    : tipo === 'QUINCENAL'
+                      ? 'Quincenal'
+                      : tipo === 'MENSUAL'
+                        ? 'Mensual'
+                        : 'Semanal'}
+                </button>
+              ))}
+            </div>
+          </div>
           {recibos.cargando ? (
             <Cargador />
           ) : recibos.error ? (
@@ -179,13 +221,21 @@ export function MiNominaPage() {
             />
           ) : (
             <Tabla<MiRecibo>
-              filas={recibos.datos ?? []}
+              filas={recibosFiltrados}
               obtenerClave={(fila) => fila.id}
               columnas={columnas}
               vacio={
                 <EstadoVacio
-                  titulo="Aún no tienes recibos"
-                  descripcion="Cuando Recursos Humanos calcule un periodo, tu recibo aparecerá aquí."
+                  titulo={
+                    recibos.datos?.length
+                      ? 'No hay recibos en esta frecuencia'
+                      : 'Aún no tienes recibos'
+                  }
+                  descripcion={
+                    recibos.datos?.length
+                      ? 'Prueba con otra frecuencia para consultar tus recibos.'
+                      : 'Cuando Recursos Humanos calcule un periodo, tu recibo aparecerá aquí.'
+                  }
                 />
               }
             />
@@ -223,6 +273,18 @@ export function MiNominaPage() {
       </Modal>
     </div>
   );
+}
+
+function rangoPeriodo(inicio?: string, fin?: string): string {
+  const corto = (valor?: string) => {
+    if (!valor) return '—';
+    const [year, month, day] = valor.slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day)
+      .toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+      .replace('.', '')
+      .toLocaleUpperCase('es-MX');
+  };
+  return `${corto(inicio)} - ${corto(fin)}`;
 }
 
 function DatosPersonales({ perfil }: { perfil: MiPerfil }) {

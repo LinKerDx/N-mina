@@ -57,10 +57,45 @@ export function registrarHoras(registros: NuevoRegistro[]): Promise<RegistroHora
 export interface NuevaMarcacionDispositivo {
   empleadoId: string;
   empleadoNombre: string;
+  numeroEmpleado?: string;
   tipo: TipoMarcacion;
   ocurridoEn: string;
   dispositivoId: string;
   eventoDispositivoId: string;
+}
+
+export interface EventoCalendario {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  fechaInicio: string;
+  fechaFin: string;
+  creadoPor: string;
+}
+
+export function listarEventosCalendario(desde: string, hasta: string, senal?: AbortSignal) {
+  return peticion<EventoCalendario[]>(
+    `/api/produccion/eventos-calendario${construirQuery({ desde, hasta })}`,
+    { senal },
+  );
+}
+
+export function crearEventoCalendario(evento: Omit<EventoCalendario, 'id' | 'creadoPor'>) {
+  return peticion<EventoCalendario>('/api/produccion/eventos-calendario', {
+    metodo: 'POST',
+    cuerpo: evento,
+  });
+}
+
+export function listarMisMarcaciones(
+  desde: string,
+  hasta: string,
+  senal?: AbortSignal,
+): Promise<MarcacionAsistencia[]> {
+  return peticion<MarcacionAsistencia[]>(
+    `/api/produccion/marcaciones/mias${construirQuery({ desde, hasta })}`,
+    { senal },
+  );
 }
 
 /** Recibe el evento en formato normalizado para mantener el API independiente del fabricante. */

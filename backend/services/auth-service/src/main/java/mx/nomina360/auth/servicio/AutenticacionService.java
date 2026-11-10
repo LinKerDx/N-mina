@@ -109,7 +109,8 @@ public class AutenticacionService {
 
     private RespuestaTokens emitirTokens(Usuario usuario) {
         String accessToken = jwtService.crearAccessToken(new UsuarioJwt(
-                usuario.getId(), usuario.getEmail(), usuario.getRol(), usuario.getArea()));
+                usuario.getId(), usuario.getEmail(), usuario.getRol(), usuario.getArea(),
+                usuario.getNumeroEmpleado()));
 
         String refreshToken = nuevoTokenOpaco();
         RefreshToken entidad = new RefreshToken();

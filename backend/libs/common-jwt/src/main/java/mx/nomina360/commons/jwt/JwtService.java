@@ -43,6 +43,7 @@ public class JwtService {
                 .claim("email", usuario.email())
                 .claim("rol", usuario.rol())
                 .claim("area", usuario.area())
+                .claim("numeroEmpleado", usuario.numeroEmpleado())
                 .signWith(llave, Jwts.SIG.HS256)
                 .compact();
     }
@@ -64,7 +65,8 @@ public class JwtService {
                 UUID.fromString(claims.getSubject()),
                 claims.get("email", String.class),
                 claims.get("rol", String.class),
-                claims.get("area", String.class));
+                claims.get("area", String.class),
+                claims.get("numeroEmpleado", String.class));
     }
 
     public long minutosVigenciaAccessToken() {

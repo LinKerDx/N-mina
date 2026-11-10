@@ -32,6 +32,9 @@ public class Usuario {
     @Column(nullable = false, length = 40)
     private String area;
 
+    @Column(name = "numero_empleado", length = 20)
+    private String numeroEmpleado;
+
     @Column(nullable = false)
     private Boolean activo = true;
 
@@ -98,6 +101,10 @@ public class Usuario {
     public String getArea() {
         return area;
     }
+
+    public String getNumeroEmpleado() { return numeroEmpleado; }
+
+    public void setNumeroEmpleado(String numeroEmpleado) { this.numeroEmpleado = numeroEmpleado; }
 
     public void setArea(String area) {
         this.area = area;

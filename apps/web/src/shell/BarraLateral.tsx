@@ -39,7 +39,7 @@ export function BarraLateral({ abierta, onCerrar }: { abierta: boolean; onCerrar
         aria-hidden={esMovil && !abierta}
         inert={esMovil && !abierta}
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/10 bg-ink-900/95 backdrop-blur-xl transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/10 bg-ink-900/95 backdrop-blur-xl transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:flex-none lg:self-start lg:z-auto lg:translate-x-0',
           abierta ? 'translate-x-0' : '-translate-x-full',
         )}
       >

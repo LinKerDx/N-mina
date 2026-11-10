@@ -1,14 +1,57 @@
-import { configurarApi, guardarSesion, haySesion, limpiarSesion, type DatosLogin, type Usuario } from '@nomina360/core';
+import { useEffect, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+  configurarApi,
+  guardarSesion,
+  haySesion,
+  limpiarSesion,
+  type DatosLogin,
+  type Usuario,
+} from '@nomina360/core';
 import { cerrarSesionRemota, iniciarSesion, obtenerPerfil } from '@/features/auth/api';
+import { queryClient } from '@/shared/lib/queryClient';
+
+interface EstadoSesion {
+  usuario: Usuario | null;
+  cargando: boolean;
+  disponibilidad: Disponibilidad;
+  establecerUsuario: (usuario: Usuario | null) => void;
+  establecerCargando: (cargando: boolean) => void;
+  establecerDisponibilidad: (disponibilidad: Disponibilidad) => void;
+  iniciar: (datos: DatosLogin) => Promise<Usuario>;
+  cerrar: () => Promise<void>;
+}
+
+export type Disponibilidad = 'EN_LINEA' | 'AUSENTE' | 'NO_MOLESTAR';
+
+export const useSesionStore = create<EstadoSesion>((set) => ({
+  usuario: null,
+  cargando: true,
+  disponibilidad: 'EN_LINEA',
+  establecerUsuario: (usuario) => set({ usuario }),
+  establecerCargando: (cargando) => set({ cargando }),
+  establecerDisponibilidad: (disponibilidad) => set({ disponibilidad }),
+  iniciar: async (datos) => {
+    const sesion = await iniciarSesion(datos);
+    queryClient.clear();
+    guardarSesion(sesion);
+    set({ usuario: sesion.usuario, cargando: false, disponibilidad: 'EN_LINEA' });
+    return sesion.usuario;
+  },
+  cerrar: async () => {
+    try {
+      await cerrarSesionRemota();
+    } catch {
+      // La sesión local también debe cerrarse si el refresh ya expiró.
+    } finally {
+      limpiarSesion();
+      queryClient.clear();
+      set({ usuario: null, cargando: false, disponibilidad: 'EN_LINEA' });
+    }
+  },
+}));
 
 interface ContextoSesion {
   usuario: Usuario | null;
@@ -17,78 +60,52 @@ interface ContextoSesion {
   cerrar: () => Promise<void>;
 }
 
-const SesionContexto = createContext<ContextoSesion | null>(null);
-
-/**
- * Estado global de sesion. Guarda los tokens y recupera el perfil al recargar.
- */
 export function ProveedorSesion({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [cargando, setCargando] = useState(true);
+  const usuario = useSesionStore((estado) => estado.usuario);
+  const establecerUsuario = useSesionStore((estado) => estado.establecerUsuario);
+  const establecerCargando = useSesionStore((estado) => estado.establecerCargando);
+  const perfil = useQuery({
+    queryKey: ['sesion', 'perfil'],
+    queryFn: obtenerPerfil,
+    enabled: haySesion() && !usuario,
+    retry: false,
+    staleTime: Infinity,
+  });
 
   useEffect(() => {
     configurarApi({
-      alExpirarSesion: () => setUsuario(null),
+      alExpirarSesion: () => {
+        limpiarSesion();
+        queryClient.clear();
+        establecerUsuario(null);
+        establecerCargando(false);
+      },
     });
-  }, []);
+  }, [establecerCargando, establecerUsuario]);
 
   useEffect(() => {
-    let activo = true;
-
-    async function recuperar() {
-      if (!haySesion()) {
-        setCargando(false);
-        return;
-      }
-      try {
-        const perfil = await obtenerPerfil();
-        if (activo) {
-          setUsuario(perfil);
-        }
-      } catch {
-        limpiarSesion();
-      } finally {
-        if (activo) {
-          setCargando(false);
-        }
-      }
+    if (!haySesion()) {
+      establecerCargando(false);
+    } else if (perfil.data) {
+      establecerUsuario(perfil.data);
+      establecerCargando(false);
+    } else if (perfil.isError) {
+      limpiarSesion();
+      establecerUsuario(null);
+      establecerCargando(false);
     }
+  }, [perfil.data, perfil.isError, establecerCargando, establecerUsuario]);
 
-    void recuperar();
-    return () => {
-      activo = false;
-    };
-  }, []);
-
-  const iniciar = useCallback(async (datos: DatosLogin) => {
-    const sesion = await iniciarSesion(datos);
-    guardarSesion(sesion);
-    setUsuario(sesion.usuario);
-    return sesion.usuario;
-  }, []);
-
-  const cerrar = useCallback(async () => {
-    try {
-      await cerrarSesionRemota();
-    } catch {
-      // si el refresh ya expiro, igual limpiamos la sesion local
-    }
-    limpiarSesion();
-    setUsuario(null);
-  }, []);
-
-  const valor = useMemo<ContextoSesion>(
-    () => ({ usuario, cargando, iniciar, cerrar }),
-    [usuario, cargando, iniciar, cerrar],
-  );
-
-  return <SesionContexto.Provider value={valor}>{children}</SesionContexto.Provider>;
+  return children;
 }
 
 export function useSesion(): ContextoSesion {
-  const contexto = useContext(SesionContexto);
-  if (!contexto) {
-    throw new Error('useSesion debe usarse dentro de <ProveedorSesion>');
-  }
-  return contexto;
+  return useSesionStore(
+    useShallow((estado) => ({
+      usuario: estado.usuario,
+      cargando: estado.cargando,
+      iniciar: estado.iniciar,
+      cerrar: estado.cerrar,
+    })),
+  );
 }

@@ -14,7 +14,10 @@ export interface FiltroEmpleados {
   size?: number;
 }
 
-export function buscarEmpleados(filtro: FiltroEmpleados, senal?: AbortSignal): Promise<Pagina<Empleado>> {
+export function buscarEmpleados(
+  filtro: FiltroEmpleados,
+  senal?: AbortSignal,
+): Promise<Pagina<Empleado>> {
   return peticion<Pagina<Empleado>>(
     `/api/rh/empleados${construirQuery({
       q: filtro.q,
@@ -41,7 +44,7 @@ export interface NuevoEmpleado {
   tipoContrato: 'INDEFINIDO' | 'TEMPORAL' | 'HONORARIOS' | 'PRACTICAS';
   fechaIngreso: string;
   salarioDiario: number;
-  estatus?: 'ACTIVO';
+  estatus?: 'ACTIVO' | 'BAJA' | 'VACACIONES' | 'INCAPACIDAD';
 }
 
 export function crearEmpleado(datos: NuevoEmpleado): Promise<Empleado> {
@@ -56,6 +59,17 @@ export function darDeBajaEmpleado(id: string, fechaBaja?: string): Promise<void>
   return peticion<void>(`/api/rh/empleados/${id}${construirQuery({ fechaBaja })}`, {
     metodo: 'DELETE',
   });
+}
+
+export function reingresarEmpleado(id: string, fechaIngreso: string): Promise<Empleado> {
+  return peticion<Empleado>(
+    `/api/rh/empleados/${id}/reingreso${construirQuery({ fechaIngreso })}`,
+    { metodo: 'POST' },
+  );
+}
+
+export function revertirBajaEmpleado(id: string): Promise<Empleado> {
+  return peticion<Empleado>(`/api/rh/empleados/${id}/revertir-baja`, { metodo: 'POST' });
 }
 
 export function catalogoDepartamentos(senal?: AbortSignal): Promise<Departamento[]> {

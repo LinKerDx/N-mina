@@ -13,6 +13,7 @@ import {
 import { useSesion } from '@/features/auth/contexto/SesionContexto';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { rutaInicio } from '@/shared/lib/navegacion';
+import { useAccion } from '@/shared/hooks/useAccion';
 
 const CUENTAS_DEMO = [
   { rol: 'Administración', email: 'admin@nomina360.mx' },
@@ -24,6 +25,7 @@ const CUENTAS_DEMO = [
 
 export function LoginPage() {
   const { iniciar, usuario, cargando } = useSesion();
+  const iniciarAccion = useAccion(iniciar, { invalidarAlCompletar: false });
   const navegar = useNavigate();
   const ubicacion = useLocation();
 
@@ -38,8 +40,11 @@ export function LoginPage() {
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
   const [mostrarCuentas, setMostrarCuentas] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Iniciar sesión | Nómina360';
+  }, []);
 
   useEffect(() => {
     const raiz = contenedorRef.current;
@@ -104,9 +109,8 @@ export function LoginPage() {
     }
 
     setErrores({});
-    setEnviando(true);
     try {
-      const usuario = await iniciar(resultado.data);
+      const usuario = await iniciarAccion.ejecutar(resultado.data);
       await animarSalidaLogin(formularioRef.current);
       const destino =
         (ubicacion.state as { desde?: string } | null)?.desde ?? rutaInicio(usuario.rol);
@@ -114,8 +118,6 @@ export function LoginPage() {
     } catch (excepcion) {
       setErrorGeneral(mensajeDeError(excepcion));
       sacudir(tarjetaRef.current);
-    } finally {
-      setEnviando(false);
     }
   }
 
@@ -212,7 +214,9 @@ export function LoginPage() {
                 data-tarjeta
                 className="absolute right-2 top-24 w-56 rounded-2xl border border-white/10 bg-ink-800/85 p-4 shadow-tarjeta backdrop-blur"
               >
-                <p className="text-[11px] uppercase tracking-wider text-slate-400">Empleados activos</p>
+                <p className="text-[11px] uppercase tracking-wider text-slate-400">
+                  Empleados activos
+                </p>
                 <p
                   data-contador="128"
                   data-sufijo=""
@@ -272,6 +276,7 @@ export function LoginPage() {
                   name="email"
                   autoComplete="username"
                   placeholder="nombre@nomina360.mx"
+                  required
                   value={email}
                   onChange={(evento) => setEmail(evento.target.value)}
                   error={errores.email}
@@ -284,6 +289,7 @@ export function LoginPage() {
                     name="password"
                     autoComplete="current-password"
                     placeholder="••••••••"
+                    required
                     value={password}
                     onChange={(evento) => setPassword(evento.target.value)}
                     error={errores.password}
@@ -304,10 +310,10 @@ export function LoginPage() {
                   type="submit"
                   tamano="lg"
                   className="w-full"
-                  cargando={enviando}
-                  disabled={enviando}
+                  cargando={iniciarAccion.ejecutando}
+                  disabled={iniciarAccion.ejecutando}
                 >
-                  {enviando ? 'Verificando…' : 'Entrar a Nómina360'}
+                  {iniciarAccion.ejecutando ? 'Verificando…' : 'Entrar a Nómina360'}
                 </Boton>
               </form>
 
@@ -317,7 +323,9 @@ export function LoginPage() {
                   onClick={() => setMostrarCuentas((valor) => !valor)}
                   className="text-xs font-medium text-slate-400 transition hover:text-brand-300"
                 >
-                  {mostrarCuentas ? 'Ocultar cuentas de demostración' : 'Ver cuentas de demostración'}
+                  {mostrarCuentas
+                    ? 'Ocultar cuentas de demostración'
+                    : 'Ver cuentas de demostración'}
                 </button>
 
                 {mostrarCuentas ? (
@@ -332,7 +340,9 @@ export function LoginPage() {
                         <span className="block text-[11px] uppercase tracking-wider text-slate-400">
                           {cuenta.rol}
                         </span>
-                        <span className="block truncate text-xs text-slate-200">{cuenta.email}</span>
+                        <span className="block truncate text-xs text-slate-200">
+                          {cuenta.email}
+                        </span>
                       </button>
                     ))}
                   </div>

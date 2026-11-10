@@ -1,4 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Treadmill } from 'ldrs/react';
+import 'ldrs/react/Treadmill.css';
 import { cn } from './cn';
 
 type Variante = 'primario' | 'secundario' | 'fantasma' | 'peligro';
@@ -51,14 +53,7 @@ export function Boton({
       aria-busy={cargando || undefined}
       {...resto}
     >
-      {cargando ? (
-        <span
-          className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-          aria-hidden="true"
-        />
-      ) : (
-        iconoIzquierda
-      )}
+      {cargando ? <Treadmill size="20" speed="1.25" color="currentColor" /> : iconoIzquierda}
       {children}
     </button>
   );

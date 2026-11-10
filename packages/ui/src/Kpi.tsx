@@ -24,7 +24,10 @@ export function Kpi({
   } as const;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-ink-800/60 p-5">
+    <div
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-ink-800/60 p-5"
+      aria-busy={cargando}
+    >
       <div
         className={cn(
           'pointer-events-none absolute -right-8 -top-10 size-28 rounded-full bg-gradient-to-br to-transparent blur-2xl',
@@ -35,7 +38,12 @@ export function Kpi({
         <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{titulo}</p>
         {icono ? <span className={cn('text-lg', acentos[acento])}>{icono}</span> : null}
       </div>
-      <p className={cn('mt-3 text-2xl font-semibold tracking-tight text-white', cargando && 'animate-pulse')}>
+      <p
+        className={cn(
+          'mt-3 text-2xl font-semibold tracking-tight text-white',
+          cargando && 'animate-pulse',
+        )}
+      >
         {cargando ? '—' : valor}
       </p>
       {detalle ? <div className="mt-1 text-xs text-slate-400">{detalle}</div> : null}
@@ -61,15 +69,18 @@ export function BarraProgreso({
 
   return (
     <div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-white/10"
+        role="progressbar"
+        aria-valuenow={Math.round(limitado)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={etiqueta ?? 'Progreso'}
+      >
         <div
           className={cn('h-full rounded-full transition-all duration-500', tonos[tono])}
           style={{ width: `${limitado}%` }}
-          role="progressbar"
-          aria-valuenow={Math.round(limitado)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={etiqueta ?? 'Progreso'}
+          aria-hidden="true"
         />
       </div>
     </div>

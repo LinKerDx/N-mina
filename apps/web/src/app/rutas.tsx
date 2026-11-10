@@ -27,9 +27,7 @@ export function RutasApp() {
           <Route index element={<InicioRedirect />} />
 
           <Route
-            element={
-              <RutaPermitida roles={['ADMIN', 'RH', 'PRODUCCION', 'ADMINISTRACION']} />
-            }
+            element={<RutaPermitida roles={['ADMIN', 'RH', 'PRODUCCION', 'ADMINISTRACION']} />}
           >
             <Route path="tablero" element={<TableroPage />} />
           </Route>
@@ -38,7 +36,7 @@ export function RutasApp() {
             <Route path="mi-nomina" element={<MiNominaPage />} />
           </Route>
 
-          <Route element={<RutaPermitida roles={['ADMIN', 'RH']} />}>
+          <Route element={<RutaPermitida roles={['ADMIN', 'RH', 'ADMINISTRACION']} />}>
             <Route path="nomina" element={<NominaPage />} />
             <Route path="empleados" element={<EmpleadosPage />} />
           </Route>

@@ -74,6 +74,19 @@ public class EmpleadoController {
         servicio.darDeBaja(id, fechaBaja);
     }
 
+    @Operation(summary = "Reingresa a un empleado con una nueva fecha de ingreso")
+    @PostMapping("/empleados/{id}/reingreso")
+    public RespuestaEmpleado reingresar(@PathVariable UUID id,
+                                        @RequestParam(required = false) LocalDate fechaIngreso) {
+        return servicio.reingresar(id, fechaIngreso);
+    }
+
+    @Operation(summary = "Revierte una baja accidental y conserva la fecha de ingreso original")
+    @PostMapping("/empleados/{id}/revertir-baja")
+    public RespuestaEmpleado revertirBaja(@PathVariable UUID id) {
+        return servicio.revertirBaja(id);
+    }
+
     @Operation(summary = "Catalogo de departamentos")
     @GetMapping("/departamentos")
     public List<RespuestaDepartamento> departamentos() {

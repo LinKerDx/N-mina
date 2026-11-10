@@ -28,7 +28,7 @@ public class CatalogoEmpleadosController {
 
     @Operation(summary = "Empleados activos (id, numero y nombre)")
     @GetMapping("/empleados/activos")
-    @PreAuthorize("hasAnyRole('ADMIN','RH','PRODUCCION')")
+    @PreAuthorize("hasAnyRole('ADMIN','RH','PRODUCCION','ADMINISTRACION')")
     public List<RespuestaEmpleadoResumen> activos() {
         return empleados.findByEstatus("ACTIVO").stream()
                 .map(RespuestaEmpleadoResumen::desde)

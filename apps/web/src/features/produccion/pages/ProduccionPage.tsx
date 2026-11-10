@@ -1,4 +1,4 @@
-import { fecha, type RegistroHoras } from '@nomina360/core';
+import { fecha, fechaHora, type RegistroHoras } from '@nomina360/core';
 import {
   Boton,
   Cargador,
@@ -26,11 +26,15 @@ import { FormularioRegistroHoras } from '@/features/produccion/components/Formul
 import { empleadosActivos } from '@/features/empleados/api';
 import { Aviso, EncabezadoPagina } from '@/shared/componentes/EncabezadoPagina';
 import { Icono } from '@/shell/iconos';
+import { exportarCsv } from '@/shared/lib/exportarCsv';
+import { fechaCalendarioLocal } from '@/shared/lib/fechaCalendario';
+import { ErrorCarga } from '@/shared/componentes/ErrorCarga';
 
-const HOY = new Date().toISOString().slice(0, 10);
+const HOY = fechaCalendarioLocal();
 
 export function ProduccionPage() {
   const [dia, setDia] = useState(HOY);
+  const [estatusFiltro, setEstatusFiltro] = useState('');
   const [modalRegistro, setModalRegistro] = useState(false);
   const [registroARechazar, setRegistroARechazar] = useState<RegistroHoras | null>(null);
   const [motivo, setMotivo] = useState('');
@@ -48,6 +52,9 @@ export function ProduccionPage() {
   const registrar = useAccion(registrarHoras);
 
   const lista = registros.datos ?? [];
+  const listaFiltrada = estatusFiltro
+    ? lista.filter((registro) => registro.estatus === estatusFiltro)
+    : lista;
   const horasExtra = lista.reduce((total, item) => total + item.horasExtra, 0);
   const pendientes = lista.filter((item) => item.estatus === 'REGISTRADO').length;
 
@@ -85,7 +92,9 @@ export function ProduccionPage() {
         <div>
           <p className="text-sm font-medium text-white">{fila.empleadoNombre}</p>
           <p className="text-[11px] text-slate-500">
-            {fila.centroTrabajoId ? (nombreCentro.get(fila.centroTrabajoId) ?? 'Centro') : 'Sin centro'}
+            {fila.centroTrabajoId
+              ? (nombreCentro.get(fila.centroTrabajoId) ?? 'Centro')
+              : 'Sin centro'}
             {' · '}
             {nombreTurno.get(fila.turnoId) ?? 'Turno'}
           </p>
@@ -119,13 +128,22 @@ export function ProduccionPage() {
     },
     {
       clave: 'acciones',
-      encabezado: '',
+      encabezado: 'Seguimiento',
       alinear: 'derecha',
       render: (fila) =>
         fila.estatus !== 'REGISTRADO' ? (
-          <span className="text-[11px] text-slate-500">
-            {fila.aprobadoPor ? `por ${fila.aprobadoPor}` : '—'}
-          </span>
+          <div className="text-[11px] text-slate-400">
+            <p>
+              {fila.estatus === 'APROBADO' ? 'Aprobado' : 'Rechazado'}
+              {fila.aprobadoPor ? ` por ${fila.aprobadoPor}` : ''}
+            </p>
+            {fila.aprobadoEn ? (
+              <p className="mt-0.5 text-slate-500">{fechaHora(fila.aprobadoEn)}</p>
+            ) : null}
+            {fila.estatus === 'RECHAZADO' && fila.observaciones ? (
+              <p className="mt-0.5 max-w-48 text-rose-300">{fila.observaciones}</p>
+            ) : null}
+          </div>
         ) : (
           <div className="flex items-center justify-end gap-1">
             <Boton
@@ -164,6 +182,17 @@ export function ProduccionPage() {
               className="rounded-xl border border-white/10 bg-ink-900/70 px-3 py-2 text-sm text-slate-200 focus:border-brand-400/60 focus:outline-none focus:ring-2 focus:ring-brand-400/30"
               aria-label="Fecha de registros"
             />
+            <select
+              value={estatusFiltro}
+              onChange={(evento) => setEstatusFiltro(evento.target.value)}
+              className="rounded-xl border border-white/10 bg-ink-900/70 px-3 py-2 text-sm text-slate-200 focus:border-brand-400/60 focus:outline-none focus:ring-2 focus:ring-brand-400/30"
+              aria-label="Filtrar por estatus"
+            >
+              <option value="">Todos los estatus</option>
+              <option value="REGISTRADO">Pendientes</option>
+              <option value="APROBADO">Aprobados</option>
+              <option value="RECHAZADO">Rechazados</option>
+            </select>
             <Boton
               onClick={() => setModalRegistro(true)}
               iconoIzquierda={<Icono nombre="mas" className="size-4" />}
@@ -176,7 +205,6 @@ export function ProduccionPage() {
 
       {aprobar.error ? <Aviso>{aprobar.error}</Aviso> : null}
       {registrar.error ? <Aviso>{registrar.error}</Aviso> : null}
-      {registros.error ? <Aviso>{registros.error}</Aviso> : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Kpi
@@ -205,11 +233,40 @@ export function ProduccionPage() {
       </div>
 
       <Tarjeta>
+        <div className="mb-3 flex justify-end">
+          <Boton
+            variante="secundario"
+            disabled={!listaFiltrada.length}
+            onClick={() =>
+              exportarCsv(
+                `produccion-${dia}.csv`,
+                ['Empleado', 'Fecha', 'Horas normales', 'Horas extra', 'Estatus', 'Aprobado por'],
+                listaFiltrada.map((fila) => [
+                  fila.empleadoNombre,
+                  fila.fecha,
+                  fila.horasNormales,
+                  fila.horasExtra,
+                  fila.estatus,
+                  fila.aprobadoPor ?? '',
+                ]),
+              )
+            }
+            iconoIzquierda={<Icono nombre="descargar" className="size-4" />}
+          >
+            Exportar CSV
+          </Boton>
+        </div>
         {registros.cargando ? (
           <Cargador />
+        ) : registros.error ? (
+          <ErrorCarga
+            mensaje={registros.error}
+            onReintentar={registros.recargar}
+            recurso="los registros"
+          />
         ) : (
           <Tabla<RegistroHoras>
-            filas={lista}
+            filas={listaFiltrada}
             obtenerClave={(fila) => fila.id}
             columnas={columnas}
             vacio={
@@ -230,17 +287,35 @@ export function ProduccionPage() {
         descripcion="Un registro por empleado, fecha y turno."
         ancho="lg"
       >
-        <FormularioRegistroHoras
-          empleados={empleados.datos ?? []}
-          centros={centros.datos ?? []}
-          turnos={turnos.datos ?? []}
-          onCancelar={() => setModalRegistro(false)}
-          onRegistrado={async (nuevos) => {
-            await registrar.ejecutar(nuevos);
-            setModalRegistro(false);
-            registros.recargar();
-          }}
-        />
+        {empleados.cargando || centros.cargando || turnos.cargando ? (
+          <Cargador mensaje="Cargando empleados y turnos…" />
+        ) : empleados.error ? (
+          <ErrorCarga
+            mensaje={empleados.error}
+            onReintentar={empleados.recargar}
+            recurso="los empleados"
+          />
+        ) : centros.error ? (
+          <ErrorCarga
+            mensaje={centros.error}
+            onReintentar={centros.recargar}
+            recurso="los centros de trabajo"
+          />
+        ) : turnos.error ? (
+          <ErrorCarga mensaje={turnos.error} onReintentar={turnos.recargar} recurso="los turnos" />
+        ) : (
+          <FormularioRegistroHoras
+            empleados={empleados.datos ?? []}
+            centros={centros.datos ?? []}
+            turnos={turnos.datos ?? []}
+            onCancelar={() => setModalRegistro(false)}
+            onRegistrado={async (nuevos) => {
+              await registrar.ejecutar(nuevos);
+              setModalRegistro(false);
+              registros.recargar();
+            }}
+          />
+        )}
       </Modal>
 
       <Modal
@@ -258,7 +333,11 @@ export function ProduccionPage() {
             <Boton variante="secundario" onClick={() => setRegistroARechazar(null)}>
               Cancelar
             </Boton>
-            <Boton variante="peligro" cargando={rechazar.ejecutando} onClick={() => void confirmarRechazo()}>
+            <Boton
+              variante="peligro"
+              cargando={rechazar.ejecutando}
+              onClick={() => void confirmarRechazo()}
+            >
               Rechazar
             </Boton>
           </>

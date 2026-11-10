@@ -62,6 +62,19 @@ export interface ConceptoNomina {
   gravable: boolean;
 }
 
+export type TipoAjusteNomina = 'PERCEPCION' | 'DEDUCCION';
+
+export interface AjusteNomina {
+  id: string;
+  periodoId: string;
+  empleadoId: string;
+  empleadoNombre: string;
+  tipo: TipoAjusteNomina;
+  descripcion: string;
+  importe: number;
+  gravable: boolean;
+}
+
 export interface ReciboNomina {
   id: string;
   empleadoId: string;
@@ -171,6 +184,19 @@ export interface RegistroHoras {
   aprobadoPor: string | null;
   aprobadoEn: string | null;
   observaciones: string | null;
+}
+
+export type TipoMarcacion = 'ENTRADA_TURNO' | 'SALIDA_COMIDA' | 'ENTRADA_COMIDA' | 'SALIDA_TURNO';
+
+export interface MarcacionAsistencia {
+  id: string;
+  empleadoId: string;
+  empleadoNombre: string;
+  tipo: TipoMarcacion;
+  ocurridoEn: string;
+  origen: 'MANUAL' | 'DISPOSITIVO';
+  dispositivoId: string | null;
+  eventoDispositivoId: string | null;
 }
 
 export interface CentroTrabajo {

@@ -4,6 +4,7 @@ import mx.nomina360.commons.web.error.BusinessException;
 import mx.nomina360.commons.web.error.ConflictException;
 import mx.nomina360.commons.web.error.NotFoundException;
 import mx.nomina360.rh.dominio.ConceptoNomina;
+import mx.nomina360.rh.dominio.AjusteNomina;
 import mx.nomina360.rh.dominio.CuotaImss;
 import mx.nomina360.rh.dominio.Empleado;
 import mx.nomina360.rh.dominio.Incidencia;
@@ -21,6 +22,7 @@ import mx.nomina360.rh.nomina.CalculadoraNomina;
 import mx.nomina360.rh.nomina.ParametrosNomina;
 import mx.nomina360.rh.nomina.ResultadoCalculo;
 import mx.nomina360.rh.repositorio.ConceptoNominaRepository;
+import mx.nomina360.rh.repositorio.AjusteNominaRepository;
 import mx.nomina360.rh.repositorio.CuotaImssRepository;
 import mx.nomina360.rh.repositorio.EmpleadoRepository;
 import mx.nomina360.rh.repositorio.IncidenciaRepository;
@@ -59,6 +61,7 @@ public class NominaService {
     private final PeriodoNominaRepository periodos;
     private final ReciboNominaRepository recibos;
     private final ConceptoNominaRepository conceptos;
+    private final AjusteNominaRepository ajustes;
     private final EmpleadoRepository empleados;
     private final IncidenciaRepository incidencias;
     private final TarifaIsrRepository tarifasIsr;
@@ -69,6 +72,7 @@ public class NominaService {
     public NominaService(PeriodoNominaRepository periodos,
                          ReciboNominaRepository recibos,
                          ConceptoNominaRepository conceptos,
+                         AjusteNominaRepository ajustes,
                          EmpleadoRepository empleados,
                          IncidenciaRepository incidencias,
                          TarifaIsrRepository tarifasIsr,
@@ -78,6 +82,7 @@ public class NominaService {
         this.periodos = periodos;
         this.recibos = recibos;
         this.conceptos = conceptos;
+        this.ajustes = ajustes;
         this.empleados = empleados;
         this.incidencias = incidencias;
         this.tarifasIsr = tarifasIsr;
@@ -138,12 +143,22 @@ public class NominaService {
                 .findByFechaBetweenOrderByFechaAsc(periodo.getFechaInicio(), periodo.getFechaFin())
                 .stream()
                 .collect(Collectors.groupingBy(Incidencia::getEmpleadoId));
+        Map<UUID, List<AjusteNomina>> ajustesPorEmpleado = ajustes
+                .findByPeriodoIdOrderByCreadoEnAsc(periodoId).stream()
+                .collect(Collectors.groupingBy(AjusteNomina::getEmpleadoId));
 
         int generados = 0;
         for (Empleado empleado : empleados.findByEstatus("ACTIVO")) {
             ResultadoCalculo resultado = calculadora.calcular(empleado, periodo,
                     incidenciasPorEmpleado.getOrDefault(empleado.getId(), List.of()),
-                    tarifas, cuotas, parametrosNomina);
+                    tarifas, cuotas, parametrosNomina,
+                    ajustesPorEmpleado.getOrDefault(empleado.getId(), List.of()));
+
+            if (resultado.neto().signum() < 0) {
+                throw new BusinessException("DEDUCCIONES_EXCEDEN_NETO",
+                        "Las deducciones superan el neto calculado de " + empleado.nombreCompleto(),
+                        HttpStatus.BAD_REQUEST);
+            }
 
             if (resultado.sinPago()) {
                 log.debug("Empleado {} sin dias pagables en el periodo {}", empleado.getNumeroEmpleado(), periodoId);

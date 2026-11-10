@@ -3,6 +3,7 @@ import { Boton, Campo, MensajeError, Selector } from '@nomina360/ui';
 import { useState, type FormEvent } from 'react';
 import type { NuevoPago } from '@/features/administracion/api';
 import { mensajeDeError } from '@/shared/lib/errores';
+import { fechaCalendarioLocal } from '@/shared/lib/fechaCalendario';
 
 export function FormularioPago({
   centros,
@@ -21,7 +22,7 @@ export function FormularioPago({
     proveedorId: '',
     referenciaExterna: '',
     monto: '',
-    fechaPago: new Date().toISOString().slice(0, 10),
+    fechaPago: fechaCalendarioLocal(),
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function FormularioPago({
         <Selector
           etiqueta="Tipo de pago"
           name="tipo"
+          required
           value={valores.tipo}
           onChange={(evento) => actualizar('tipo', evento.target.value)}
         >
@@ -88,6 +90,7 @@ export function FormularioPago({
         <Selector
           etiqueta="Centro de costo"
           name="centroCostoId"
+          required
           value={valores.centroCostoId}
           onChange={(evento) => actualizar('centroCostoId', evento.target.value)}
           error={errores.centroCostoId}
@@ -104,6 +107,7 @@ export function FormularioPago({
           <Selector
             etiqueta="Proveedor"
             name="proveedorId"
+            required
             value={valores.proveedorId}
             onChange={(evento) => actualizar('proveedorId', evento.target.value)}
           >
@@ -122,6 +126,7 @@ export function FormularioPago({
           type="number"
           min="0.01"
           step="0.01"
+          required
           value={valores.monto}
           onChange={(evento) => actualizar('monto', evento.target.value)}
           error={errores.monto}
@@ -131,6 +136,7 @@ export function FormularioPago({
           etiqueta="Fecha de pago"
           name="fechaPago"
           type="date"
+          required
           value={valores.fechaPago}
           onChange={(evento) => actualizar('fechaPago', evento.target.value)}
           error={errores.fechaPago}

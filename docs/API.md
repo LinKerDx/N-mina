@@ -25,12 +25,12 @@ Códigos habituales: `DATOS_INVALIDOS` (400), `NO_AUTENTICADO` (401), `TOKEN_INV
 
 ## Autenticación (`auth-service`)
 
-| Método | Ruta | Rol | Descripción |
-| --- | --- | --- | --- |
-| POST | `/api/auth/login` | público | Devuelve access + refresh token |
-| POST | `/api/auth/refresh` | público | Rota el refresh y emite un access nuevo |
-| POST | `/api/auth/logout` | autenticado | Revoca el refresh indicado (204) |
-| GET | `/api/auth/me` | autenticado | Perfil del usuario |
+| Método | Ruta                | Rol         | Descripción                             |
+| ------ | ------------------- | ----------- | --------------------------------------- |
+| POST   | `/api/auth/login`   | público     | Devuelve access + refresh token         |
+| POST   | `/api/auth/refresh` | público     | Rota el refresh y emite un access nuevo |
+| POST   | `/api/auth/logout`  | autenticado | Revoca el refresh indicado (204)        |
+| GET    | `/api/auth/me`      | autenticado | Perfil del usuario                      |
 
 ```bash
 curl -s -X POST http://localhost:8080/api/auth/login \
@@ -60,25 +60,34 @@ Claims del access token: `sub` (UUID), `email`, `rol`, `area`, `iss`, `iat`, `ex
 
 ## Recursos Humanos (`rh-service`)
 
-| Método | Ruta | Rol | Descripción |
-| --- | --- | --- | --- |
-| GET | `/api/rh/empleados?q=&estatus=&page=0&size=20` | ADMIN, RH | Búsqueda paginada |
-| GET | `/api/rh/empleados/{id}` | ADMIN, RH | Detalle |
-| POST | `/api/rh/empleados` | ADMIN, RH | Alta (201) |
-| PUT | `/api/rh/empleados/{id}` | ADMIN, RH | Actualización |
-| DELETE | `/api/rh/empleados/{id}?fechaBaja=YYYY-MM-DD` | ADMIN, RH | Baja lógica (204) |
-| GET | `/api/rh/empleados/activos` | ADMIN, RH, PRODUCCIÓN | Catálogo mínimo |
-| GET | `/api/rh/departamentos` | ADMIN, RH | Catálogo |
-| GET | `/api/rh/puestos` | ADMIN, RH | Catálogo |
-| GET | `/api/rh/periodos?page=0&size=12` | ADMIN, RH | Periodos (paginado) |
-| POST | `/api/rh/periodos` | ADMIN, RH | Crea periodo (201) |
-| POST | `/api/rh/periodos/{id}/calcular` | ADMIN, RH | Calcula recibos |
-| POST | `/api/rh/periodos/{id}/cerrar` | ADMIN, RH | Cierra periodo calculado |
-| GET | `/api/rh/periodos/{id}/recibos` | ADMIN, RH | Recibos con conceptos |
-| GET | `/api/rh/recibos/{id}/pdf` | ADMIN, RH | Recibo en PDF con datos del trabajador y desglose |
-| POST | `/api/rh/incidencias` | ADMIN, RH | Registra incidencia (201) |
-| GET | `/api/rh/incidencias?empleadoId=&desde=&hasta=` | ADMIN, RH | Lista incidencias |
-| GET | `/api/rh/resumen` | autenticado | KPIs del tablero |
+| Método | Ruta                                                       | Rol                                   | Descripción                                              |
+| ------ | ---------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| GET    | `/api/rh/empleados?q=&estatus=&page=0&size=20`             | ADMIN, RH                             | Búsqueda paginada                                        |
+| GET    | `/api/rh/empleados/{id}`                                   | ADMIN, RH                             | Detalle                                                  |
+| POST   | `/api/rh/empleados`                                        | ADMIN, RH                             | Alta (201)                                               |
+| PUT    | `/api/rh/empleados/{id}`                                   | ADMIN, RH                             | Actualización                                            |
+| DELETE | `/api/rh/empleados/{id}?fechaBaja=YYYY-MM-DD`              | ADMIN, RH                             | Baja lógica (204)                                        |
+| POST   | `/api/rh/empleados/{id}/reingreso?fechaIngreso=YYYY-MM-DD` | ADMIN, RH                             | Reactiva con nueva fecha de ingreso                      |
+| POST   | `/api/rh/empleados/{id}/revertir-baja`                     | ADMIN, RH                             | Revierte la baja y conserva la fecha de ingreso original |
+| GET    | `/api/rh/empleados/activos`                                | ADMIN, RH, PRODUCCIÓN, ADMINISTRACIÓN | Catálogo mínimo                                          |
+| GET    | `/api/rh/departamentos`                                    | ADMIN, RH                             | Catálogo                                                 |
+| GET    | `/api/rh/puestos`                                          | ADMIN, RH                             | Catálogo                                                 |
+| GET    | `/api/rh/periodos?page=0&size=12`                          | ADMIN, RH, ADMINISTRACIÓN             | Periodos (paginado)                                      |
+| POST   | `/api/rh/periodos`                                         | ADMIN, RH                             | Crea periodo (201)                                       |
+| POST   | `/api/rh/periodos/{id}/calcular`                           | ADMIN, RH                             | Calcula recibos                                          |
+| POST   | `/api/rh/periodos/{id}/cerrar`                             | ADMIN, RH                             | Cierra periodo calculado                                 |
+| GET    | `/api/rh/periodos/{id}/recibos`                            | ADMIN, RH                             | Recibos con conceptos                                    |
+| GET    | `/api/rh/recibos/{id}/pdf`                                 | ADMIN, RH                             | Recibo en PDF con datos del trabajador y desglose        |
+| POST   | `/api/rh/incidencias`                                      | ADMIN, RH                             | Registra incidencia (201)                                |
+| GET    | `/api/rh/incidencias?empleadoId=&desde=&hasta=`            | ADMIN, RH                             | Lista incidencias                                        |
+| GET    | `/api/rh/resumen`                                          | autenticado                           | KPIs del tablero                                         |
+| GET    | `/api/rh/periodos/{id}/ajustes`                            | ADMIN, RH, ADMINISTRACIÓN             | Conceptos adicionales de un periodo                      |
+| POST   | `/api/rh/periodos/{id}/ajustes`                            | ADMIN, RH, ADMINISTRACIÓN             | Agrega percepción o deducción (201)                      |
+| DELETE | `/api/rh/ajustes/{id}`                                     | ADMIN, RH, ADMINISTRACIÓN             | Quita concepto de un periodo (204)                       |
+
+Los ajustes admiten `PERCEPCION` o `DEDUCCION`, descripción, importe positivo y bandera `gravable`.
+Solo se pueden modificar mientras el periodo esté en borrador; las percepciones gravables se
+incluyen en la base de ISR. Las deducciones que dejen un neto negativo impiden el cálculo.
 
 ### Alta de empleado
 
@@ -146,10 +155,34 @@ Recibo:
   "neto": 11294.16,
   "estatus": "CALCULADO",
   "conceptos": [
-    { "tipo": "PERCEPCION", "clave": "001", "descripcion": "Sueldo", "importe": 12600.0, "gravable": true },
-    { "tipo": "PERCEPCION", "clave": "003", "descripcion": "Horas extra dobles", "importe": 157.5, "gravable": true },
-    { "tipo": "DEDUCCION", "clave": "103", "descripcion": "ISR", "importe": 1197.29, "gravable": false },
-    { "tipo": "DEDUCCION", "clave": "104", "descripcion": "Cuota obrera IMSS", "importe": 371.19, "gravable": false }
+    {
+      "tipo": "PERCEPCION",
+      "clave": "001",
+      "descripcion": "Sueldo",
+      "importe": 12600.0,
+      "gravable": true
+    },
+    {
+      "tipo": "PERCEPCION",
+      "clave": "003",
+      "descripcion": "Horas extra dobles",
+      "importe": 157.5,
+      "gravable": true
+    },
+    {
+      "tipo": "DEDUCCION",
+      "clave": "103",
+      "descripcion": "ISR",
+      "importe": 1197.29,
+      "gravable": false
+    },
+    {
+      "tipo": "DEDUCCION",
+      "clave": "104",
+      "descripcion": "Cuota obrera IMSS",
+      "importe": 371.19,
+      "gravable": false
+    }
   ]
 }
 ```
@@ -170,29 +203,54 @@ neto a pagar. Sin token responde `401`.
 
 ### Incidencia
 
-| tipo | `cantidad` significa |
-| --- | --- |
-| `FALTA` | días |
-| `RETARDO` | minutos |
-| `HORAS_EXTRA` | horas |
-| `VACACIONES` | días |
-| `INCAPACIDAD` | días |
-| `PERMISO` | días |
-| `BONO_PRODUCTIVIDAD` | importe en MXN |
+| tipo                 | `cantidad` significa |
+| -------------------- | -------------------- |
+| `FALTA`              | días                 |
+| `RETARDO`            | minutos              |
+| `HORAS_EXTRA`        | horas                |
+| `VACACIONES`         | días                 |
+| `INCAPACIDAD`        | días                 |
+| `PERMISO`            | días                 |
+| `BONO_PRODUCTIVIDAD` | importe en MXN       |
 
 ---
 
 ## Producción (`produccion-service`)
 
-| Método | Ruta | Rol | Descripción |
-| --- | --- | --- | --- |
-| POST | `/api/produccion/registros` | ADMIN, PRODUCCIÓN | Registra lote de horas (201) |
-| POST | `/api/produccion/registros/{id}/aprobar` | ADMIN, PRODUCCIÓN | Aprueba y encola evento |
-| POST | `/api/produccion/registros/{id}/rechazar?motivo=` | ADMIN, PRODUCCIÓN | Rechaza |
-| GET | `/api/produccion/registros?fecha=&empleadoId=&desde=&hasta=` | ADMIN, PRODUCCIÓN | Consulta |
-| GET | `/api/produccion/resumen?empleadoId=&desde=&hasta=` | ADMIN, PRODUCCIÓN | Totales de horas |
-| GET | `/api/produccion/centros-trabajo` | ADMIN, PRODUCCIÓN | Catálogo |
-| GET | `/api/produccion/turnos` | ADMIN, PRODUCCIÓN | Catálogo |
+| Método | Ruta                                                         | Rol               | Descripción                                                      |
+| ------ | ------------------------------------------------------------ | ----------------- | ---------------------------------------------------------------- |
+| POST   | `/api/produccion/registros`                                  | ADMIN, PRODUCCIÓN | Registra lote de horas (201)                                     |
+| POST   | `/api/produccion/registros/{id}/aprobar`                     | ADMIN, PRODUCCIÓN | Aprueba y encola evento                                          |
+| POST   | `/api/produccion/registros/{id}/rechazar?motivo=`            | ADMIN, PRODUCCIÓN | Rechaza                                                          |
+| GET    | `/api/produccion/registros?fecha=&empleadoId=&desde=&hasta=` | ADMIN, PRODUCCIÓN | Consulta                                                         |
+| GET    | `/api/produccion/resumen?empleadoId=&desde=&hasta=`          | ADMIN, PRODUCCIÓN | Totales de horas                                                 |
+| GET    | `/api/produccion/centros-trabajo`                            | ADMIN, PRODUCCIÓN | Catálogo                                                         |
+| GET    | `/api/produccion/turnos`                                     | ADMIN, PRODUCCIÓN | Catálogo                                                         |
+| POST   | `/api/produccion/marcaciones`                                | ADMIN, PRODUCCIÓN | Recibe una marcación normalizada del conector del checador (201) |
+| GET    | `/api/produccion/marcaciones?empleadoId=&desde=&hasta=`      | ADMIN, PRODUCCIÓN | Lista marcaciones por empleado e intervalo ISO-8601              |
+
+### Preparación para reloj checador
+
+La API normaliza cuatro eventos para que el resto del sistema no dependa de la marca del equipo:
+`ENTRADA_TURNO`, `SALIDA_COMIDA`, `ENTRADA_COMIDA` y `SALIDA_TURNO`. Cada evento conserva el instante
+con su zona horaria, el dispositivo y el identificador original del evento. Los reintentos del
+conector son idempotentes por dispositivo e identificador de evento.
+
+El checador no se conecta directamente a la API. Al elegir el equipo, un conector local traducirá
+su protocolo, asociará su número de tarjeta con el `empleadoId` de Nómina360 y enviará este contrato
+al gateway con credenciales de servicio. Por ahora la ruta está protegida con JWT y rol `ADMIN` o
+`PRODUCCION`; no se debe guardar el JWT de un usuario en el dispositivo.
+
+```json
+{
+  "empleadoId": "33333333-0000-0000-0000-000000000001",
+  "empleadoNombre": "Ana Lopez Garcia",
+  "tipo": "ENTRADA_TURNO",
+  "ocurridoEn": "2026-11-10T07:00:00-06:00",
+  "dispositivoId": "checador-planta-1",
+  "eventoDispositivoId": "evento-original-987654"
+}
+```
 
 ```bash
 curl -s -X POST http://localhost:8080/api/produccion/registros \
@@ -216,15 +274,15 @@ Al aprobar se publica `produccion.horas.aprobadas`:
 
 ## Administración (`administracion-service`)
 
-| Método | Ruta | Rol | Descripción |
-| --- | --- | --- | --- |
-| GET | `/api/administracion/centros-costo` | ADMIN, ADMINISTRACIÓN | Catálogo |
-| GET | `/api/administracion/proveedores` | ADMIN, ADMINISTRACIÓN | Catálogo |
-| GET | `/api/administracion/presupuestos?ejercicio=2026` | ADMIN, ADMINISTRACIÓN | Presupuestos con % ejercido |
-| POST | `/api/administracion/presupuestos` | ADMIN, ADMINISTRACIÓN | Define/actualiza monto |
-| GET | `/api/administracion/pagos?desde=&hasta=` | ADMIN, ADMINISTRACIÓN | Pagos |
-| POST | `/api/administracion/pagos` | ADMIN, ADMINISTRACIÓN | Registra pago (201) |
-| GET | `/api/administracion/resumen?ejercicio=2026` | ADMIN, ADMINISTRACIÓN | KPIs |
+| Método | Ruta                                              | Rol                   | Descripción                 |
+| ------ | ------------------------------------------------- | --------------------- | --------------------------- |
+| GET    | `/api/administracion/centros-costo`               | ADMIN, ADMINISTRACIÓN | Catálogo                    |
+| GET    | `/api/administracion/proveedores`                 | ADMIN, ADMINISTRACIÓN | Catálogo                    |
+| GET    | `/api/administracion/presupuestos?ejercicio=2026` | ADMIN, ADMINISTRACIÓN | Presupuestos con % ejercido |
+| POST   | `/api/administracion/presupuestos`                | ADMIN, ADMINISTRACIÓN | Define/actualiza monto      |
+| GET    | `/api/administracion/pagos?desde=&hasta=`         | ADMIN, ADMINISTRACIÓN | Pagos                       |
+| POST   | `/api/administracion/pagos`                       | ADMIN, ADMINISTRACIÓN | Registra pago (201)         |
+| GET    | `/api/administracion/resumen?ejercicio=2026`      | ADMIN, ADMINISTRACIÓN | KPIs                        |
 
 ```bash
 curl -s -X POST http://localhost:8080/api/administracion/pagos \
@@ -243,13 +301,13 @@ Requiere el rol `EMPLEADO`. La identidad se resuelve con el **correo del token**
 `empleados.email` en `rh_db`; todas las consultas se filtran por ese empleado y un recibo de
 otra persona responde `404` para no revelar su existencia.
 
-| Método | Ruta | Rol | Descripción |
-| --- | --- | --- | --- |
-| GET | `/api/rh/mi-nomina/perfil` | EMPLEADO | Datos personales y laborales propios |
-| GET | `/api/rh/mi-nomina/resumen` | EMPLEADO | Acumulados y último pago |
-| GET | `/api/rh/mi-nomina/recibos` | EMPLEADO | Historial de recibos propios |
-| GET | `/api/rh/mi-nomina/recibos/{id}` | EMPLEADO | Desglose del recibo propio |
-| GET | `/api/rh/mi-nomina/recibos/{id}/pdf` | EMPLEADO | Recibo propio en PDF |
+| Método | Ruta                                 | Rol      | Descripción                          |
+| ------ | ------------------------------------ | -------- | ------------------------------------ |
+| GET    | `/api/rh/mi-nomina/perfil`           | EMPLEADO | Datos personales y laborales propios |
+| GET    | `/api/rh/mi-nomina/resumen`          | EMPLEADO | Acumulados y último pago             |
+| GET    | `/api/rh/mi-nomina/recibos`          | EMPLEADO | Historial de recibos propios         |
+| GET    | `/api/rh/mi-nomina/recibos/{id}`     | EMPLEADO | Desglose del recibo propio           |
+| GET    | `/api/rh/mi-nomina/recibos/{id}/pdf` | EMPLEADO | Recibo propio en PDF                 |
 
 ```bash
 curl -s -X POST http://localhost:8080/api/auth/login \
@@ -290,11 +348,11 @@ recibo de RH, pero solo después de comprobar la propiedad del recibo.
 
 ## Operación
 
-| Método | Ruta | Descripción |
-| --- | --- | --- |
-| GET | `/actuator/health` | Salud (público) |
-| GET | `/actuator/health/liveness` · `/readiness` | Probes |
-| GET | `/actuator/metrics` | Métricas |
-| GET | `/swagger-ui.html` · `/v3/api-docs` | Documentación interactiva |
+| Método | Ruta                                       | Descripción               |
+| ------ | ------------------------------------------ | ------------------------- |
+| GET    | `/actuator/health`                         | Salud (público)           |
+| GET    | `/actuator/health/liveness` · `/readiness` | Probes                    |
+| GET    | `/actuator/metrics`                        | Métricas                  |
+| GET    | `/swagger-ui.html` · `/v3/api-docs`        | Documentación interactiva |
 
 Cabeceras útiles: `X-Correlation-Id` (se propaga y se devuelve) y `Authorization`.

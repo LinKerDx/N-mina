@@ -1,6 +1,7 @@
 import {
   esquemaPeriodo,
   fecha,
+  fechaHora,
   moneda,
   type PeriodoNomina,
   type ReciboNomina,
@@ -21,6 +22,8 @@ import {
   tonoPorEstatus,
 } from '@nomina360/ui';
 import { useState, type FormEvent, type MouseEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useSesion } from '@/features/auth/contexto/SesionContexto';
 import {
   calcularPeriodo,
   cerrarPeriodo,
@@ -34,13 +37,26 @@ import { useConsulta } from '@/shared/hooks/useConsulta';
 import { mensajeDeError } from '@/shared/lib/errores';
 import { Aviso, EncabezadoPagina } from '@/shared/componentes/EncabezadoPagina';
 import { Icono } from '@/shell/iconos';
+import { exportarCsv } from '@/shared/lib/exportarCsv';
+import { ErrorCarga } from '@/shared/componentes/ErrorCarga';
+import { ContenedorRecibosMensuales } from '@/features/nomina/components/ContenedorRecibosMensuales';
+import { AjustesPeriodo } from '@/features/nomina/components/AjustesPeriodo';
 
 export function NominaPage() {
+  const { usuario } = useSesion();
+  const puedeGestionarNomina = usuario?.rol === 'ADMIN' || usuario?.rol === 'RH';
+  const puedeAjustarNomina = puedeGestionarNomina || usuario?.rol === 'ADMINISTRACION';
+  const [parametros] = useSearchParams();
+  const filtroPeriodo = parametros.get('buscar')?.toLocaleLowerCase('es-MX') ?? '';
   const [modalNuevo, setModalNuevo] = useState(false);
   const [resultado, setResultado] = useState<ResultadoCalculo | null>(null);
   const [periodoRecibos, setPeriodoRecibos] = useState<PeriodoNomina | null>(null);
+  const [periodoAjustes, setPeriodoAjustes] = useState<PeriodoNomina | null>(null);
 
   const periodos = useConsulta((senal) => listarPeriodos(0, 24, senal), 'periodos-nomina');
+  const periodosFiltrados = (periodos.datos?.contenido ?? []).filter((periodo) =>
+    periodo.nombre.toLocaleLowerCase('es-MX').includes(filtroPeriodo),
+  );
   const calcular = useAccion(calcularPeriodo);
   const cerrar = useAccion(cerrarPeriodo);
 
@@ -66,108 +82,166 @@ export function NominaPage() {
   return (
     <div className="space-y-5">
       <EncabezadoPagina
-        titulo="Nómina"
-        descripcion="Crea periodos, calcula percepciones y deducciones (ISR, IMSS) y consulta los recibos generados."
+        titulo={puedeGestionarNomina ? 'Nómina' : 'Ajustes de nómina'}
+        descripcion={
+          puedeGestionarNomina
+            ? 'Crea periodos, administra conceptos y calcula percepciones y deducciones (ISR, IMSS).'
+            : 'Agrega o quita conceptos adicionales en periodos que aún no se han calculado.'
+        }
         accion={
-          <Boton
-            onClick={() => setModalNuevo(true)}
-            iconoIzquierda={<Icono nombre="mas" className="size-4" />}
-          >
-            Nuevo periodo
-          </Boton>
+          puedeGestionarNomina ? (
+            <Boton
+              onClick={() => setModalNuevo(true)}
+              iconoIzquierda={<Icono nombre="mas" className="size-4" />}
+            >
+              Nuevo periodo
+            </Boton>
+          ) : undefined
         }
       />
 
       {resultado ? (
         <Aviso tono="exito">
-          Se generaron <strong>{resultado.recibosGenerados}</strong> recibos para {resultado.nombrePeriodo}:
-          percepciones {moneda(resultado.totalPercepciones)}, deducciones {moneda(resultado.totalDeducciones)} y
-          neto {moneda(resultado.totalNeto)}.
+          Se generaron <strong>{resultado.recibosGenerados}</strong> recibos para{' '}
+          {resultado.nombrePeriodo}: percepciones {moneda(resultado.totalPercepciones)}, deducciones{' '}
+          {moneda(resultado.totalDeducciones)} y neto {moneda(resultado.totalNeto)}.
         </Aviso>
       ) : null}
       {calcular.error ? <Aviso>{calcular.error}</Aviso> : null}
       {cerrar.error ? <Aviso>{cerrar.error}</Aviso> : null}
-      {periodos.error ? <Aviso>{periodos.error}</Aviso> : null}
 
       {periodos.cargando ? (
         <Tarjeta>
           <Cargador />
         </Tarjeta>
-      ) : (periodos.datos?.contenido.length ?? 0) === 0 ? (
+      ) : periodos.error ? (
+        <Tarjeta>
+          <ErrorCarga
+            mensaje={periodos.error}
+            onReintentar={periodos.recargar}
+            recurso="los periodos de nómina"
+          />
+        </Tarjeta>
+      ) : periodosFiltrados.length === 0 ? (
         <Tarjeta>
           <EstadoVacio
-            titulo="Sin periodos de nómina"
-            descripcion="Crea un periodo mensual o quincenal para calcular la primera nómina."
-            accion={<Boton onClick={() => setModalNuevo(true)}>Crear periodo</Boton>}
+            titulo={filtroPeriodo ? 'Sin periodos coincidentes' : 'Sin periodos de nómina'}
+            descripcion={
+              filtroPeriodo
+                ? `No encontramos periodos que coincidan con “${filtroPeriodo}”.`
+                : 'Crea un periodo mensual o quincenal para calcular la primera nómina.'
+            }
+            accion={
+              puedeGestionarNomina ? (
+                <Boton onClick={() => setModalNuevo(true)}>Crear periodo</Boton>
+              ) : undefined
+            }
           />
         </Tarjeta>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-          {(periodos.datos?.contenido ?? []).map((periodo) => (
-            <Tarjeta key={periodo.id} className="flex flex-col">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-white">{periodo.nombre}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {periodo.tipo} · {periodo.diasPeriodo} días
-                  </p>
+        <>
+          <div className="flex justify-end">
+            <Boton
+              variante="secundario"
+              disabled={!periodos.datos?.contenido.length}
+              onClick={() =>
+                exportarCsv(
+                  'periodos-nomina.csv',
+                  ['Periodo', 'Tipo', 'Inicio', 'Fin', 'Fecha de pago', 'Días', 'Estatus'],
+                  periodosFiltrados.map((fila) => [
+                    fila.nombre,
+                    fila.tipo,
+                    fila.fechaInicio,
+                    fila.fechaFin,
+                    fila.fechaPago,
+                    fila.diasPeriodo,
+                    fila.estatus,
+                  ]),
+                )
+              }
+              iconoIzquierda={<Icono nombre="descargar" className="size-4" />}
+            >
+              Exportar periodos
+            </Boton>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+            {periodosFiltrados.map((periodo) => (
+              <Tarjeta key={periodo.id} className="flex flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{periodo.nombre}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      {periodo.tipo} · {periodo.diasPeriodo} días
+                    </p>
+                  </div>
+                  <Insignia tono={tonoPorEstatus(periodo.estatus)}>{periodo.estatus}</Insignia>
                 </div>
-                <Insignia tono={tonoPorEstatus(periodo.estatus)}>{periodo.estatus}</Insignia>
-              </div>
 
-              <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <dt className="text-slate-500">Inicio</dt>
-                  <dd className="text-slate-200">{fecha(periodo.fechaInicio)}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Fin</dt>
-                  <dd className="text-slate-200">{fecha(periodo.fechaFin)}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Pago</dt>
-                  <dd className="text-slate-200">{fecha(periodo.fechaPago)}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Calculado</dt>
-                  <dd className="text-slate-200">
-                    {periodo.calculadoEn ? fecha(periodo.calculadoEn) : 'Pendiente'}
-                  </dd>
-                </div>
-              </dl>
+                <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <dt className="text-slate-500">Inicio</dt>
+                    <dd className="text-slate-200">{fecha(periodo.fechaInicio)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Fin</dt>
+                    <dd className="text-slate-200">{fecha(periodo.fechaFin)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Pago</dt>
+                    <dd className="text-slate-200">{fecha(periodo.fechaPago)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Calculado</dt>
+                    <dd className="text-slate-200">
+                      {periodo.calculadoEn ? fechaHora(periodo.calculadoEn) : 'Pendiente'}
+                    </dd>
+                  </div>
+                </dl>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {periodo.estatus === 'BORRADOR' ? (
-                  <Boton
-                    tamano="sm"
-                    cargando={calcular.ejecutando}
-                    onClick={() => void manejarCalculo(periodo)}
-                    iconoIzquierda={<Icono nombre="calculadora" className="size-4" />}
-                  >
-                    Calcular
-                  </Boton>
-                ) : null}
-                {periodo.estatus === 'CALCULADO' ? (
-                  <Boton
-                    tamano="sm"
-                    variante="secundario"
-                    cargando={cerrar.ejecutando}
-                    onClick={() => void manejarCierre(periodo)}
-                  >
-                    Cerrar periodo
-                  </Boton>
-                ) : null}
-                <Boton
-                  tamano="sm"
-                  variante="fantasma"
-                  onClick={() => setPeriodoRecibos(periodo)}
-                >
-                  Ver recibos
-                </Boton>
-              </div>
-            </Tarjeta>
-          ))}
-        </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {puedeGestionarNomina && periodo.estatus === 'BORRADOR' ? (
+                    <Boton
+                      tamano="sm"
+                      cargando={calcular.ejecutando}
+                      onClick={() => void manejarCalculo(periodo)}
+                      iconoIzquierda={<Icono nombre="calculadora" className="size-4" />}
+                    >
+                      Calcular
+                    </Boton>
+                  ) : null}
+                  {puedeGestionarNomina && periodo.estatus === 'CALCULADO' ? (
+                    <Boton
+                      tamano="sm"
+                      variante="secundario"
+                      cargando={cerrar.ejecutando}
+                      onClick={() => void manejarCierre(periodo)}
+                    >
+                      Cerrar periodo
+                    </Boton>
+                  ) : null}
+                  {puedeAjustarNomina && periodo.estatus === 'BORRADOR' ? (
+                    <Boton
+                      tamano="sm"
+                      variante="secundario"
+                      onClick={() => setPeriodoAjustes(periodo)}
+                    >
+                      Conceptos adicionales
+                    </Boton>
+                  ) : null}
+                  {puedeGestionarNomina && periodo.estatus !== 'BORRADOR' ? (
+                    <Boton
+                      tamano="sm"
+                      variante="fantasma"
+                      onClick={() => setPeriodoRecibos(periodo)}
+                    >
+                      Ver recibos
+                    </Boton>
+                  ) : null}
+                </div>
+              </Tarjeta>
+            ))}
+          </div>
+        </>
       )}
 
       <Modal
@@ -186,13 +260,25 @@ export function NominaPage() {
       </Modal>
 
       <Modal
+        abierto={periodoAjustes !== null}
+        onCerrar={() => setPeriodoAjustes(null)}
+        titulo={`Conceptos adicionales · ${periodoAjustes?.nombre ?? ''}`}
+        descripcion="Estos conceptos se guardan por empleado y solo se pueden modificar mientras el periodo siga en borrador."
+        ancho="lg"
+      >
+        {periodoAjustes ? <AjustesPeriodo periodo={periodoAjustes} /> : null}
+      </Modal>
+
+      <Modal
         abierto={periodoRecibos !== null}
         onCerrar={() => setPeriodoRecibos(null)}
         titulo={`Recibos · ${periodoRecibos?.nombre ?? ''}`}
         descripcion="Desglose de percepciones y deducciones por empleado."
         ancho="lg"
       >
-        {periodoRecibos ? <ListaRecibos periodoId={periodoRecibos.id} /> : null}
+        <ContenedorRecibosMensuales>
+          {periodoRecibos ? <ListaRecibos periodoId={periodoRecibos.id} /> : null}
+        </ContenedorRecibosMensuales>
       </Modal>
     </div>
   );
@@ -206,8 +292,14 @@ function FormularioPeriodo({
   onCreado: () => void;
 }) {
   const hoy = new Date();
-  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0, 10);
-  const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const fechaLocal = (fecha: Date) =>
+    [
+      fecha.getFullYear(),
+      String(fecha.getMonth() + 1).padStart(2, '0'),
+      String(fecha.getDate()).padStart(2, '0'),
+    ].join('-');
+  const inicioMes = fechaLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+  const finMes = fechaLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
 
   const [valores, setValores] = useState({
     nombre: `Nómina ${hoy.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}`,
@@ -218,7 +310,7 @@ function FormularioPeriodo({
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const crear = useAccion(crearPeriodo);
 
   function actualizar(campo: keyof typeof valores, valor: string) {
     setValores((previos) => ({ ...previos, [campo]: valor }));
@@ -242,14 +334,11 @@ function FormularioPeriodo({
     }
 
     setErrores({});
-    setEnviando(true);
     try {
-      await crearPeriodo(resultado.data);
+      await crear.ejecutar(resultado.data);
       onCreado();
     } catch (excepcion) {
       setErrorGeneral(mensajeDeError(excepcion));
-    } finally {
-      setEnviando(false);
     }
   }
 
@@ -258,6 +347,7 @@ function FormularioPeriodo({
       <Campo
         etiqueta="Nombre del periodo"
         name="nombre"
+        required
         value={valores.nombre}
         onChange={(evento) => actualizar('nombre', evento.target.value)}
         error={errores.nombre}
@@ -266,6 +356,7 @@ function FormularioPeriodo({
         <Selector
           etiqueta="Tipo"
           name="tipo"
+          required
           value={valores.tipo}
           onChange={(evento) => actualizar('tipo', evento.target.value)}
         >
@@ -278,6 +369,7 @@ function FormularioPeriodo({
           etiqueta="Fecha de pago"
           name="fechaPago"
           type="date"
+          required
           value={valores.fechaPago}
           onChange={(evento) => actualizar('fechaPago', evento.target.value)}
           error={errores.fechaPago}
@@ -286,6 +378,7 @@ function FormularioPeriodo({
           etiqueta="Fecha de inicio"
           name="fechaInicio"
           type="date"
+          required
           value={valores.fechaInicio}
           onChange={(evento) => actualizar('fechaInicio', evento.target.value)}
           error={errores.fechaInicio}
@@ -294,6 +387,7 @@ function FormularioPeriodo({
           etiqueta="Fecha de fin"
           name="fechaFin"
           type="date"
+          required
           value={valores.fechaFin}
           onChange={(evento) => actualizar('fechaFin', evento.target.value)}
           error={errores.fechaFin}
@@ -306,7 +400,7 @@ function FormularioPeriodo({
         <Boton variante="secundario" type="button" onClick={onCancelar}>
           Cancelar
         </Boton>
-        <Boton type="submit" cargando={enviando}>
+        <Boton type="submit" cargando={crear.ejecutando}>
           Crear periodo
         </Boton>
       </div>
@@ -325,7 +419,9 @@ function ListaRecibos({ periodoId }: { periodoId: string }) {
   }
 
   if (recibos.error) {
-    return <Aviso>{recibos.error}</Aviso>;
+    return (
+      <ErrorCarga mensaje={recibos.error} onReintentar={recibos.recargar} recurso="los recibos" />
+    );
   }
 
   if ((recibos.datos?.length ?? 0) === 0) {
@@ -362,20 +458,18 @@ function ListaRecibos({ periodoId }: { periodoId: string }) {
 }
 
 function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
-  const [descargando, setDescargando] = useState(false);
-  const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
+  const descarga = useAccion(() => descargarReciboPdf(recibo.id, recibo.numeroEmpleado), {
+    invalidarAlCompletar: false,
+  });
 
   async function descargarPdf(evento: MouseEvent<HTMLButtonElement>) {
     evento.preventDefault();
     evento.stopPropagation();
-    setDescargando(true);
-    setErrorDescarga(null);
+    descarga.limpiarError();
     try {
-      await descargarReciboPdf(recibo.id, recibo.numeroEmpleado);
-    } catch (excepcion) {
-      setErrorDescarga(mensajeDeError(excepcion));
-    } finally {
-      setDescargando(false);
+      await descarga.ejecutar();
+    } catch {
+      // El error de la mutación se muestra junto al recibo.
     }
   }
 
@@ -405,7 +499,7 @@ function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
             <Boton
               variante="secundario"
               tamano="sm"
-              cargando={descargando}
+              cargando={descarga.ejecutando}
               onClick={(evento) => void descargarPdf(evento)}
               iconoIzquierda={<Icono nombre="descargar" className="size-3.5" />}
               title="Descargar recibo en PDF con datos del trabajador"
@@ -419,9 +513,9 @@ function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
           </div>
         </summary>
 
-        {errorDescarga ? (
+        {descarga.error ? (
           <p role="alert" className="px-4 pt-3 text-xs text-rose-300">
-            {errorDescarga}
+            {descarga.error}
           </p>
         ) : null}
 
@@ -435,7 +529,10 @@ function ReciboItem({ recibo }: { recibo: ReciboNomina }) {
             </thead>
             <tbody>
               {recibo.conceptos.map((concepto) => (
-                <tr key={`${concepto.clave}-${concepto.descripcion}`} className="border-t border-white/5">
+                <tr
+                  key={`${concepto.clave}-${concepto.descripcion}`}
+                  className="border-t border-white/5"
+                >
                   <td className="py-1.5 text-slate-300">
                     <span className="mr-2 text-[10px] text-slate-600">{concepto.clave}</span>
                     {concepto.descripcion}

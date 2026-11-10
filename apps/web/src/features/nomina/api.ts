@@ -1,12 +1,14 @@
 import {
   descargarArchivo,
   peticion,
+  type AjusteNomina,
   type EstatusPeriodo,
   type Pagina,
   type PeriodoNomina,
   type ReciboNomina,
   type ResultadoCalculo,
   type TipoPeriodo,
+  type TipoAjusteNomina,
 } from '@nomina360/core';
 
 export function listarPeriodos(
@@ -14,10 +16,9 @@ export function listarPeriodos(
   tamano = 24,
   senal?: AbortSignal,
 ): Promise<Pagina<PeriodoNomina>> {
-  return peticion<Pagina<PeriodoNomina>>(
-    `/api/rh/periodos?page=${pagina}&size=${tamano}`,
-    { senal },
-  );
+  return peticion<Pagina<PeriodoNomina>>(`/api/rh/periodos?page=${pagina}&size=${tamano}`, {
+    senal,
+  });
 }
 
 export interface NuevoPeriodo {
@@ -46,6 +47,35 @@ export function recibosDePeriodo(id: string, senal?: AbortSignal): Promise<Recib
 
 export function esPeriodoCalculable(estatus: EstatusPeriodo): boolean {
   return estatus === 'BORRADOR';
+}
+
+export interface NuevoAjusteNomina {
+  empleadoId: string;
+  tipo: TipoAjusteNomina;
+  descripcion: string;
+  importe: number;
+  gravable: boolean;
+}
+
+export function listarAjustesNomina(
+  periodoId: string,
+  senal?: AbortSignal,
+): Promise<AjusteNomina[]> {
+  return peticion<AjusteNomina[]>(`/api/rh/periodos/${periodoId}/ajustes`, { senal });
+}
+
+export function crearAjusteNomina(
+  periodoId: string,
+  ajuste: NuevoAjusteNomina,
+): Promise<AjusteNomina> {
+  return peticion<AjusteNomina>(`/api/rh/periodos/${periodoId}/ajustes`, {
+    metodo: 'POST',
+    cuerpo: ajuste,
+  });
+}
+
+export function eliminarAjusteNomina(id: string): Promise<void> {
+  return peticion<void>(`/api/rh/ajustes/${id}`, { metodo: 'DELETE' });
 }
 
 /**

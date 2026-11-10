@@ -56,7 +56,7 @@ Detalle completo: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) · Decisiones: [d
 | Capa | Tecnología |
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite 6, Tailwind CSS 3.4, anime.js 3, React Router 7 |
-| Estado/HTTP | Cliente propio tipado en `@nomina360/core` (refresh transparente de JWT) |
+| Estado/HTTP | TanStack Query para consultas y mutaciones, Zustand para la sesión y cliente HTTP tipado en `@nomina360/core` (refresh transparente de JWT) |
 | Backend | Java 21, Spring Boot 3.4, Spring Security, Spring Data JPA, Flyway, Spring Cloud Gateway |
 | Mensajería | RabbitMQ 3.13 (topic exchange + dead-letter queue + outbox) |
 | Datos | PostgreSQL 16, una instancia por área |

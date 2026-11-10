@@ -32,7 +32,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/rh")
-@PreAuthorize("hasAnyRole('ADMIN','RH')")
 @Tag(name = "Nomina", description = "Periodos, calculo y recibos de nomina")
 public class NominaController {
 
@@ -46,6 +45,7 @@ public class NominaController {
 
     @Operation(summary = "Lista los periodos de nomina")
     @GetMapping("/periodos")
+    @PreAuthorize("hasAnyRole('ADMIN','RH','ADMINISTRACION')")
     public PageResponse<RespuestaPeriodo> listar(@RequestParam(defaultValue = "0") int page,
                                                  @RequestParam(defaultValue = "12") int size) {
         Page<RespuestaPeriodo> resultado = servicio.listarPeriodos(page, size);
@@ -55,6 +55,7 @@ public class NominaController {
 
     @Operation(summary = "Crea un periodo de nomina")
     @PostMapping("/periodos")
+    @PreAuthorize("hasAnyRole('ADMIN','RH')")
     @ResponseStatus(HttpStatus.CREATED)
     public RespuestaPeriodo crear(@Valid @RequestBody SolicitudPeriodo solicitud) {
         return servicio.crearPeriodo(solicitud);
@@ -62,24 +63,28 @@ public class NominaController {
 
     @Operation(summary = "Calcula los recibos del periodo")
     @PostMapping("/periodos/{id}/calcular")
+    @PreAuthorize("hasAnyRole('ADMIN','RH')")
     public RespuestaCalculo calcular(@PathVariable UUID id) {
         return servicio.calcular(id);
     }
 
     @Operation(summary = "Cierra el periodo calculado")
     @PostMapping("/periodos/{id}/cerrar")
+    @PreAuthorize("hasAnyRole('ADMIN','RH')")
     public RespuestaPeriodo cerrar(@PathVariable UUID id) {
         return servicio.cerrarPeriodo(id);
     }
 
     @Operation(summary = "Recibos del periodo con sus conceptos")
     @GetMapping("/periodos/{id}/recibos")
+    @PreAuthorize("hasAnyRole('ADMIN','RH')")
     public List<RespuestaRecibo> recibos(@PathVariable UUID id) {
         return servicio.recibosDePeriodo(id);
     }
 
     @Operation(summary = "Descarga el recibo en PDF con el desglose y los datos del trabajador")
     @GetMapping("/recibos/{id}/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN','RH')")
     public ResponseEntity<byte[]> reciboPdf(@PathVariable UUID id) {
         ReciboPdfService.DocumentoPdf documento = servicioPdf.generar(id);
 

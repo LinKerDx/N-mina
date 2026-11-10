@@ -1,6 +1,7 @@
 package mx.nomina360.rh.nomina;
 
 import mx.nomina360.rh.dominio.CuotaImss;
+import mx.nomina360.rh.dominio.AjusteNomina;
 import mx.nomina360.rh.dominio.Empleado;
 import mx.nomina360.rh.dominio.Incidencia;
 import mx.nomina360.rh.dominio.PeriodoNomina;
@@ -49,6 +50,16 @@ public class CalculadoraNomina {
                                      List<TarifaIsr> tarifas,
                                      List<CuotaImss> cuotas,
                                      ParametrosNomina parametros) {
+        return calcular(empleado, periodo, incidencias, tarifas, cuotas, parametros, List.of());
+    }
+
+    public ResultadoCalculo calcular(Empleado empleado,
+                                     PeriodoNomina periodo,
+                                     List<Incidencia> incidencias,
+                                     List<TarifaIsr> tarifas,
+                                     List<CuotaImss> cuotas,
+                                     ParametrosNomina parametros,
+                                     List<AjusteNomina> ajustes) {
         BigDecimal salarioDiario = escala(empleado.getSalarioDiario());
         BigDecimal diasActivos = diasActivosEnPeriodo(empleado, periodo);
 
@@ -61,6 +72,7 @@ public class CalculadoraNomina {
         BigDecimal diasVacaciones = limitar(suma(incidencias, TiposIncidencia.VACACIONES), diasActivos);
         BigDecimal horasExtra = suma(incidencias, TiposIncidencia.HORAS_EXTRA);
         BigDecimal bonos = suma(incidencias, TiposIncidencia.BONO_PRODUCTIVIDAD);
+        BigDecimal percepcionesAjustesGravables = CERO;
 
         List<ConceptoCalculado> conceptos = new ArrayList<>();
         int orden = 1;
@@ -105,6 +117,19 @@ public class CalculadoraNomina {
                     escala(bonos), true, orden++));
         }
 
+        int numeroAjuste = 1;
+        for (AjusteNomina ajuste : ajustes) {
+            String clave = "AJU-" + numeroAjuste++;
+            if ("PERCEPCION".equals(ajuste.getTipo())) {
+                BigDecimal importe = escala(ajuste.getImporte());
+                conceptos.add(new ConceptoCalculado(TIPO_PERCEPCION, clave, ajuste.getDescripcion(),
+                        importe, Boolean.TRUE.equals(ajuste.getGravable()), orden++));
+                if (Boolean.TRUE.equals(ajuste.getGravable())) {
+                    percepcionesAjustesGravables = percepcionesAjustesGravables.add(importe);
+                }
+            }
+        }
+
         BigDecimal descuentoFaltas = multiplicar(salarioDiario, faltas);
         if (descuentoFaltas.signum() > 0) {
             conceptos.add(new ConceptoCalculado(TIPO_DEDUCCION, "101", "Falta(s) sin goce",
@@ -123,6 +148,7 @@ public class CalculadoraNomina {
                 .add(importeHorasDobles)
                 .add(importeHorasTriples)
                 .add(escala(bonos))
+                .add(percepcionesAjustesGravables)
                 .subtract(descuentoFaltas)
                 .subtract(descuentoIncapacidad)
                 .max(BigDecimal.ZERO);
@@ -136,6 +162,15 @@ public class CalculadoraNomina {
         if (imss.signum() > 0) {
             conceptos.add(new ConceptoCalculado(TIPO_DEDUCCION, "104", "Cuota obrera IMSS",
                     imss, false, orden++));
+        }
+
+        numeroAjuste = 1;
+        for (AjusteNomina ajuste : ajustes) {
+            if ("DEDUCCION".equals(ajuste.getTipo())) {
+                conceptos.add(new ConceptoCalculado(TIPO_DEDUCCION, "AJU-" + numeroAjuste,
+                        ajuste.getDescripcion(), escala(ajuste.getImporte()), false, orden++));
+            }
+            numeroAjuste++;
         }
 
         BigDecimal totalPercepciones = sumarTipo(conceptos, TIPO_PERCEPCION);

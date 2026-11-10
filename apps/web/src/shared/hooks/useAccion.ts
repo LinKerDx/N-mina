@@ -1,5 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { mensajeDeError } from '@/shared/lib/errores';
+import { queryClient } from '@/shared/lib/queryClient';
 
 export interface EstadoAccion<TArgs extends unknown[], TResult> {
   ejecutar: (...args: TArgs) => Promise<TResult>;
@@ -8,32 +10,28 @@ export interface EstadoAccion<TArgs extends unknown[], TResult> {
   limpiarError: () => void;
 }
 
-/**
- * Envuelve una mutacion (POST/PUT/DELETE) con estado de carga y error.
- */
+/** Ejecuta operaciones de escritura como mutaciones de TanStack Query. */
 export function useAccion<TArgs extends unknown[], TResult>(
   accion: (...args: TArgs) => Promise<TResult>,
+  opciones: { invalidarAlCompletar?: boolean } = {},
 ): EstadoAccion<TArgs, TResult> {
-  const [ejecutando, setEjecutando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const ejecutar = useCallback(
-    async (...args: TArgs) => {
-      setEjecutando(true);
-      setError(null);
-      try {
-        return await accion(...args);
-      } catch (excepcion) {
-        setError(mensajeDeError(excepcion));
-        throw excepcion;
-      } finally {
-        setEjecutando(false);
+  const mutacion = useMutation<TResult, unknown, TArgs>({
+    mutationFn: (argumentos) => accion(...argumentos),
+    onSuccess: () => {
+      if (opciones.invalidarAlCompletar !== false) {
+        void queryClient.invalidateQueries({ queryKey: ['nomina360'] });
       }
     },
-    [accion],
+  });
+  const ejecutar = useCallback(
+    (...argumentos: TArgs) => mutacion.mutateAsync(argumentos),
+    [mutacion.mutateAsync],
   );
 
-  const limpiarError = useCallback(() => setError(null), []);
-
-  return { ejecutar, ejecutando, error, limpiarError };
+  return {
+    ejecutar,
+    ejecutando: mutacion.isPending,
+    error: mutacion.error ? mensajeDeError(mutacion.error) : null,
+    limpiarError: mutacion.reset,
+  };
 }

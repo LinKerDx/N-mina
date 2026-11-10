@@ -15,11 +15,13 @@
   "dependencies": {
     "@nomina360/core": "workspace:*",
     "@nomina360/ui": "workspace:*",
+    "@tanstack/react-query": "^5.107.1",
     "animejs": "^3.2.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
-    "zod": "^3.25.32"
+    "zod": "^3.25.32",
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@nomina360/tsconfig": "workspace:*",

@@ -28,10 +28,11 @@ import {
   miResumen,
   misRecibos,
 } from '@/features/mi-nomina/api';
-import { Aviso, EncabezadoPagina } from '@/shared/componentes/EncabezadoPagina';
+import { EncabezadoPagina } from '@/shared/componentes/EncabezadoPagina';
 import { useConsulta } from '@/shared/hooks/useConsulta';
-import { mensajeDeError } from '@/shared/lib/errores';
 import { Icono } from '@/shell/iconos';
+import { useAccion } from '@/shared/hooks/useAccion';
+import { ErrorCarga } from '@/shared/componentes/ErrorCarga';
 
 export function MiNominaPage() {
   const { usuario } = useSesion();
@@ -42,7 +43,6 @@ export function MiNominaPage() {
   const recibos = useConsulta((senal) => misRecibos(senal), 'mis-recibos');
 
   const primerNombre = usuario?.nombreCompleto.split(' ')[0] ?? '';
-  const errorGeneral = perfil.error ?? resumen.error ?? recibos.error;
   const ultimaFecha = resumen.datos?.ultimaFechaPago;
 
   const columnas: Array<Columna<MiRecibo>> = [
@@ -69,7 +69,9 @@ export function MiNominaPage() {
       encabezado: 'Percepciones',
       alinear: 'derecha',
       render: (fila) => (
-        <span className="tabular-nums text-xs text-emerald-300">{moneda(fila.totalPercepciones)}</span>
+        <span className="tabular-nums text-xs text-emerald-300">
+          {moneda(fila.totalPercepciones)}
+        </span>
       ),
     },
     {
@@ -85,7 +87,9 @@ export function MiNominaPage() {
       encabezado: 'Neto',
       alinear: 'derecha',
       render: (fila) => (
-        <span className="tabular-nums text-sm font-semibold text-brand-300">{moneda(fila.neto)}</span>
+        <span className="tabular-nums text-sm font-semibold text-brand-300">
+          {moneda(fila.neto)}
+        </span>
       ),
     },
     {
@@ -113,36 +117,46 @@ export function MiNominaPage() {
         descripcion="Este es tu espacio personal: consulta tus recibos, revisa cómo se compone tu pago y descarga tu comprobante."
       />
 
-      {errorGeneral ? <Aviso>{errorGeneral}</Aviso> : null}
+      {resumen.error ? (
+        <ErrorCarga
+          mensaje={resumen.error}
+          onReintentar={resumen.recargar}
+          recurso="el resumen de nómina"
+        />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           titulo="Último neto"
-          valor={moneda(resumen.datos?.ultimoNeto ?? 0)}
-          detalle={resumen.datos?.ultimoPeriodo ?? 'Aún sin recibos'}
+          valor={resumen.error ? '—' : moneda(resumen.datos?.ultimoNeto ?? 0)}
+          detalle={
+            resumen.error ? 'No disponible' : (resumen.datos?.ultimoPeriodo ?? 'Aún sin recibos')
+          }
           icono={<Icono nombre="dinero" className="size-5" />}
           cargando={resumen.cargando}
         />
         <Kpi
           titulo="Percepciones acumuladas"
-          valor={moneda(resumen.datos?.totalPercepciones ?? 0)}
-          detalle={`${resumen.datos?.totalRecibos ?? 0} recibos`}
+          valor={resumen.error ? '—' : moneda(resumen.datos?.totalPercepciones ?? 0)}
+          detalle={resumen.error ? 'No disponible' : `${resumen.datos?.totalRecibos ?? 0} recibos`}
           acento="cielo"
           icono={<Icono nombre="nomina" className="size-5" />}
           cargando={resumen.cargando}
         />
         <Kpi
           titulo="Deducciones acumuladas"
-          valor={moneda(resumen.datos?.totalDeducciones ?? 0)}
-          detalle="ISR, IMSS y demás descuentos"
+          valor={resumen.error ? '—' : moneda(resumen.datos?.totalDeducciones ?? 0)}
+          detalle={resumen.error ? 'No disponible' : 'ISR, IMSS y demás descuentos'}
           acento="ambar"
           icono={<Icono nombre="calculadora" className="size-5" />}
           cargando={resumen.cargando}
         />
         <Kpi
           titulo="Último pago"
-          valor={ultimaFecha ? fecha(ultimaFecha) : '—'}
-          detalle={resumen.datos?.ultimoPeriodo ?? 'Sin periodos'}
+          valor={resumen.error ? '—' : ultimaFecha ? fecha(ultimaFecha) : '—'}
+          detalle={
+            resumen.error ? 'No disponible' : (resumen.datos?.ultimoPeriodo ?? 'Sin periodos')
+          }
           acento="violeta"
           icono={<Icono nombre="reloj" className="size-5" />}
           cargando={resumen.cargando}
@@ -157,6 +171,12 @@ export function MiNominaPage() {
           />
           {recibos.cargando ? (
             <Cargador />
+          ) : recibos.error ? (
+            <ErrorCarga
+              mensaje={recibos.error}
+              onReintentar={recibos.recargar}
+              recurso="tus recibos"
+            />
           ) : (
             <Tabla<MiRecibo>
               filas={recibos.datos ?? []}
@@ -179,6 +199,8 @@ export function MiNominaPage() {
           />
           {perfil.cargando ? (
             <Cargador />
+          ) : perfil.error ? (
+            <ErrorCarga mensaje={perfil.error} onReintentar={perfil.recargar} recurso="tu perfil" />
           ) : perfil.datos ? (
             <DatosPersonales perfil={perfil.datos} />
           ) : (
@@ -237,17 +259,20 @@ function DatosPersonales({ perfil }: { perfil: MiPerfil }) {
 }
 
 function DetalleRecibo({ recibo }: { recibo: MiRecibo }) {
-  const detalle = useConsulta(
-    (senal) => miRecibo(recibo.id, senal),
-    `mi-recibo:${recibo.id}`,
-  );
+  const detalle = useConsulta((senal) => miRecibo(recibo.id, senal), `mi-recibo:${recibo.id}`);
 
   if (detalle.cargando) {
     return <Cargador mensaje="Cargando el desglose…" />;
   }
 
   if (detalle.error || !detalle.datos) {
-    return <Aviso>{detalle.error ?? 'No se pudo cargar el recibo'}</Aviso>;
+    return (
+      <ErrorCarga
+        mensaje={detalle.error ?? 'No se pudo cargar el recibo.'}
+        onReintentar={detalle.recargar}
+        recurso="el desglose del recibo"
+      />
+    );
   }
 
   const datos: MiReciboDetalle = detalle.datos;
@@ -358,31 +383,29 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 }
 
 function BotonPdf({ reciboId, numeroEmpleado }: { reciboId: string; numeroEmpleado: string }) {
-  const [descargando, setDescargando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const descarga = useAccion(() => descargarMiReciboPdf(reciboId, numeroEmpleado), {
+    invalidarAlCompletar: false,
+  });
 
   async function descargar() {
-    setDescargando(true);
-    setError(null);
+    descarga.limpiarError();
     try {
-      await descargarMiReciboPdf(reciboId, numeroEmpleado);
-    } catch (excepcion) {
-      setError(mensajeDeError(excepcion));
-    } finally {
-      setDescargando(false);
+      await descarga.ejecutar();
+    } catch {
+      // El error de la mutación se muestra bajo el botón.
     }
   }
 
   return (
     <div className="flex flex-col items-end gap-1">
       <Boton
-        cargando={descargando}
+        cargando={descarga.ejecutando}
         onClick={() => void descargar()}
         iconoIzquierda={<Icono nombre="descargar" className="size-4" />}
       >
         Descargar PDF
       </Boton>
-      {error ? <span className="text-[11px] text-rose-300">{error}</span> : null}
+      {descarga.error ? <span className="text-[11px] text-rose-300">{descarga.error}</span> : null}
     </div>
   );
 }

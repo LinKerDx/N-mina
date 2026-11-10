@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
+import { Treadmill } from 'ldrs/react';
+import 'ldrs/react/Treadmill.css';
 import { cn } from './cn';
 
 export function Cargador({ mensaje = 'Cargando información…' }: { mensaje?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 py-12 text-sm text-slate-400" role="status">
-      <span className="size-5 animate-spin rounded-full border-2 border-brand-400/40 border-t-brand-400" />
+    <div
+      className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-slate-400"
+      role="status"
+      aria-live="polite"
+    >
+      <Treadmill size="70" speed="1.25" color="#6ee7b7" />
       <span>{mensaje}</span>
     </div>
   );

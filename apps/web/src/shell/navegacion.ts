@@ -29,7 +29,7 @@ export const NAVEGACION: ItemNavegacion[] = [
     etiqueta: 'Nómina',
     descripcion: 'Periodos, cálculo y recibos',
     icono: 'nomina',
-    roles: ['ADMIN', 'RH'],
+    roles: ['ADMIN', 'RH', 'ADMINISTRACION'],
   },
   {
     ruta: '/empleados',

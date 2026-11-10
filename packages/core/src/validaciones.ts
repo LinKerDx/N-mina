@@ -19,7 +19,20 @@ export const esquemaEmpleado = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio').max(80),
   apellidoPaterno: z.string().min(1, 'El apellido paterno es obligatorio').max(80),
   apellidoMaterno: z.string().max(80).optional().or(z.literal('')),
+  curp: z.string().length(18, 'La CURP debe tener 18 caracteres').optional().or(z.literal('')),
+  rfc: z
+    .string()
+    .min(12, 'El RFC debe tener al menos 12 caracteres')
+    .max(13, 'El RFC debe tener 13 caracteres')
+    .optional()
+    .or(z.literal('')),
+  nss: z.string().max(15, 'El NSS no debe exceder 15 caracteres').optional().or(z.literal('')),
   email: z.string().email('Correo inválido').optional().or(z.literal('')),
+  telefono: z
+    .string()
+    .max(20, 'El teléfono no debe exceder 20 caracteres')
+    .optional()
+    .or(z.literal('')),
   departamentoId: z.string().uuid('Selecciona un departamento').optional().or(z.literal('')),
   puestoId: z.string().uuid('Selecciona un puesto').optional().or(z.literal('')),
   tipoContrato: z.enum(['INDEFINIDO', 'TEMPORAL', 'HONORARIOS', 'PRACTICAS']),

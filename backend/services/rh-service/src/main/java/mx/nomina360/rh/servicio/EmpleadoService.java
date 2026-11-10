@@ -67,8 +67,39 @@ public class EmpleadoService {
     @Transactional
     public RespuestaEmpleado darDeBaja(UUID id, LocalDate fechaBaja) {
         Empleado empleado = buscar(id);
+        if ("BAJA".equals(empleado.getEstatus())) {
+            throw new ConflictException("El empleado ya está dado de baja");
+        }
         empleado.setEstatus("BAJA");
         empleado.setFechaBaja(fechaBaja == null ? LocalDate.now() : fechaBaja);
+        return mapear(empleados.save(empleado));
+    }
+
+    @Transactional
+    public RespuestaEmpleado reingresar(UUID id, LocalDate fechaIngreso) {
+        Empleado empleado = buscar(id);
+        if (!"BAJA".equals(empleado.getEstatus())) {
+            throw new ConflictException("Solo se puede reingresar a un empleado dado de baja");
+        }
+        LocalDate nuevoIngreso = fechaIngreso == null ? LocalDate.now() : fechaIngreso;
+        if (empleado.getFechaBaja() != null && nuevoIngreso.isBefore(empleado.getFechaBaja())) {
+            throw new BusinessException("FECHAS_INVALIDAS",
+                    "La fecha de reingreso no puede ser anterior a la fecha de baja", HttpStatus.BAD_REQUEST);
+        }
+        empleado.setEstatus("ACTIVO");
+        empleado.setFechaIngreso(nuevoIngreso);
+        empleado.setFechaBaja(null);
+        return mapear(empleados.save(empleado));
+    }
+
+    @Transactional
+    public RespuestaEmpleado revertirBaja(UUID id) {
+        Empleado empleado = buscar(id);
+        if (!"BAJA".equals(empleado.getEstatus())) {
+            throw new ConflictException("Solo se puede revertir la baja de un empleado dado de baja");
+        }
+        empleado.setEstatus("ACTIVO");
+        empleado.setFechaBaja(null);
         return mapear(empleados.save(empleado));
     }
 
@@ -174,7 +205,8 @@ public class EmpleadoService {
             Specification<Empleado> porTexto = (root, query, cb) -> cb.or(
                     cb.like(cb.lower(root.get("nombre")), patron),
                     cb.like(cb.lower(root.get("apellidoPaterno")), patron),
-                    cb.like(cb.lower(root.get("numeroEmpleado")), patron));
+                    cb.like(cb.lower(root.get("numeroEmpleado")), patron),
+                    cb.like(cb.lower(root.get("email")), patron));
             filtro = filtro.and(porTexto);
         }
 

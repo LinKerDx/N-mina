@@ -2,9 +2,11 @@ import {
   construirQuery,
   peticion,
   type CentroTrabajo,
+  type MarcacionAsistencia,
   type RegistroHoras,
   type ResumenHoras,
   type Turno,
+  type TipoMarcacion,
 } from '@nomina360/core';
 
 export interface FiltroRegistros {
@@ -14,7 +16,10 @@ export interface FiltroRegistros {
   empleadoId?: string;
 }
 
-export function listarRegistros(filtro: FiltroRegistros, senal?: AbortSignal): Promise<RegistroHoras[]> {
+export function listarRegistros(
+  filtro: FiltroRegistros,
+  senal?: AbortSignal,
+): Promise<RegistroHoras[]> {
   return peticion<RegistroHoras[]>(`/api/produccion/registros${construirQuery({ ...filtro })}`, {
     senal,
   });
@@ -47,6 +52,37 @@ export function registrarHoras(registros: NuevoRegistro[]): Promise<RegistroHora
     metodo: 'POST',
     cuerpo: { registros },
   });
+}
+
+export interface NuevaMarcacionDispositivo {
+  empleadoId: string;
+  empleadoNombre: string;
+  tipo: TipoMarcacion;
+  ocurridoEn: string;
+  dispositivoId: string;
+  eventoDispositivoId: string;
+}
+
+/** Recibe el evento en formato normalizado para mantener el API independiente del fabricante. */
+export function registrarMarcacionDispositivo(
+  marcacion: NuevaMarcacionDispositivo,
+): Promise<MarcacionAsistencia> {
+  return peticion<MarcacionAsistencia>('/api/produccion/marcaciones', {
+    metodo: 'POST',
+    cuerpo: marcacion,
+  });
+}
+
+export function listarMarcacionesAsistencia(
+  empleadoId: string,
+  desde: string,
+  hasta: string,
+  senal?: AbortSignal,
+): Promise<MarcacionAsistencia[]> {
+  return peticion<MarcacionAsistencia[]>(
+    `/api/produccion/marcaciones${construirQuery({ empleadoId, desde, hasta })}`,
+    { senal },
+  );
 }
 
 export function resumenHoras(

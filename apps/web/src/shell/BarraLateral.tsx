@@ -1,13 +1,26 @@
 import { iniciales, tituloRol } from '@nomina360/core';
 import { cn } from '@nomina360/ui';
 import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useSesion } from '@/features/auth/contexto/SesionContexto';
 import { Icono } from '@/shell/iconos';
 import { itemsParaRol } from '@/shell/navegacion';
+import { useAccion } from '@/shared/hooks/useAccion';
 
 export function BarraLateral({ abierta, onCerrar }: { abierta: boolean; onCerrar: () => void }) {
   const { usuario, cerrar } = useSesion();
+  const cerrarSesion = useAccion(cerrar, { invalidarAlCompletar: false });
   const items = itemsParaRol(usuario?.rol);
+  const [esMovil, setEsMovil] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1023px)');
+    const actualizar = () => setEsMovil(media.matches);
+    media.addEventListener('change', actualizar);
+    return () => media.removeEventListener('change', actualizar);
+  }, []);
 
   return (
     <>
@@ -21,6 +34,10 @@ export function BarraLateral({ abierta, onCerrar }: { abierta: boolean; onCerrar
       ) : null}
 
       <aside
+        id="navegacion-principal"
+        aria-label="Menú principal"
+        aria-hidden={esMovil && !abierta}
+        inert={esMovil && !abierta}
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/10 bg-ink-900/95 backdrop-blur-xl transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0',
           abierta ? 'translate-x-0' : '-translate-x-full',
@@ -52,7 +69,10 @@ export function BarraLateral({ abierta, onCerrar }: { abierta: boolean; onCerrar
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Navegación principal">
+        <nav
+          className="flex-1 space-y-1 overflow-y-auto px-3 py-4"
+          aria-label="Navegación principal"
+        >
           {items.map((item) => (
             <NavLink
               key={item.ruta}
@@ -71,11 +91,16 @@ export function BarraLateral({ abierta, onCerrar }: { abierta: boolean; onCerrar
                 <>
                   <Icono
                     nombre={item.icono}
-                    className={cn('mt-0.5 size-[18px]', isActive ? 'text-brand-300' : 'text-slate-500')}
+                    className={cn(
+                      'mt-0.5 size-[18px]',
+                      isActive ? 'text-brand-300' : 'text-slate-500',
+                    )}
                   />
                   <span className="min-w-0">
                     <span className="block text-sm font-medium">{item.etiqueta}</span>
-                    <span className="block truncate text-[11px] text-slate-500">{item.descripcion}</span>
+                    <span className="block truncate text-[11px] text-slate-500">
+                      {item.descripcion}
+                    </span>
                   </span>
                 </>
               )}
@@ -97,7 +122,7 @@ export function BarraLateral({ abierta, onCerrar }: { abierta: boolean; onCerrar
           </div>
           <button
             type="button"
-            onClick={() => void cerrar()}
+            onClick={() => void cerrarSesion.ejecutar()}
             className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-200"
           >
             <Icono nombre="salir" className="size-4" />

@@ -1,35 +1,46 @@
 import { esquemaEmpleado, type Departamento, type Empleado, type Puesto } from '@nomina360/core';
 import { Boton, Campo, MensajeError, Selector } from '@nomina360/ui';
 import { useState, type FormEvent } from 'react';
-import { crearEmpleado } from '@/features/empleados/api';
+import { actualizarEmpleado, crearEmpleado, type NuevoEmpleado } from '@/features/empleados/api';
 import { mensajeDeError } from '@/shared/lib/errores';
+import { useAccion } from '@/shared/hooks/useAccion';
+import { fechaCalendarioLocal } from '@/shared/lib/fechaCalendario';
 
 export function FormularioEmpleado({
   departamentos,
   puestos,
-  onCreado,
+  empleado,
+  onGuardado,
   onCancelar,
 }: {
   departamentos: Departamento[];
   puestos: Puesto[];
-  onCreado: (empleado: Empleado) => void;
+  empleado?: Empleado;
+  onGuardado: (empleado: Empleado) => void;
   onCancelar: () => void;
 }) {
-  const [valores, setValores] = useState({
-    numeroEmpleado: '',
-    nombre: '',
-    apellidoPaterno: '',
-    apellidoMaterno: '',
-    email: '',
-    departamentoId: '',
-    puestoId: '',
-    tipoContrato: 'INDEFINIDO' as const,
-    fechaIngreso: new Date().toISOString().slice(0, 10),
-    salarioDiario: '',
-  });
+  const [valores, setValores] = useState(() => ({
+    numeroEmpleado: empleado?.numeroEmpleado ?? '',
+    nombre: empleado?.nombre ?? '',
+    apellidoPaterno: empleado?.apellidoPaterno ?? '',
+    apellidoMaterno: empleado?.apellidoMaterno ?? '',
+    curp: empleado?.curp ?? '',
+    rfc: empleado?.rfc ?? '',
+    nss: empleado?.nss ?? '',
+    email: empleado?.email ?? '',
+    telefono: empleado?.telefono ?? '',
+    departamentoId: empleado?.departamentoId ?? '',
+    puestoId: empleado?.puestoId ?? '',
+    tipoContrato: (empleado?.tipoContrato ?? 'INDEFINIDO') as NuevoEmpleado['tipoContrato'],
+    fechaIngreso: empleado?.fechaIngreso ?? fechaCalendarioLocal(),
+    salarioDiario: empleado ? String(empleado.salarioDiario) : '',
+    estatus: empleado?.estatus ?? 'ACTIVO',
+  }));
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const guardar = useAccion((datos: NuevoEmpleado) =>
+    empleado ? actualizarEmpleado(empleado.id, datos) : crearEmpleado(datos),
+  );
 
   function actualizar(campo: keyof typeof valores, valor: string) {
     setValores((previos) => ({ ...previos, [campo]: valor }));
@@ -57,26 +68,28 @@ export function FormularioEmpleado({
     }
 
     setErrores({});
-    setEnviando(true);
     try {
       const datos = resultado.data;
-      const empleado = await crearEmpleado({
+      const guardado = await guardar.ejecutar({
         numeroEmpleado: datos.numeroEmpleado,
         nombre: datos.nombre,
         apellidoPaterno: datos.apellidoPaterno,
         apellidoMaterno: datos.apellidoMaterno || undefined,
+        curp: datos.curp || undefined,
+        rfc: datos.rfc || undefined,
+        nss: datos.nss || undefined,
         email: datos.email || undefined,
+        telefono: datos.telefono || undefined,
         departamentoId: datos.departamentoId || undefined,
         puestoId: datos.puestoId || undefined,
         tipoContrato: datos.tipoContrato,
         fechaIngreso: datos.fechaIngreso,
         salarioDiario: datos.salarioDiario,
+        estatus: valores.estatus,
       });
-      onCreado(empleado);
+      onGuardado(guardado);
     } catch (excepcion) {
       setErrorGeneral(mensajeDeError(excepcion));
-    } finally {
-      setEnviando(false);
     }
   }
 
@@ -86,6 +99,7 @@ export function FormularioEmpleado({
         <Campo
           etiqueta="Número de empleado"
           name="numeroEmpleado"
+          required
           placeholder="E-009"
           value={valores.numeroEmpleado}
           onChange={(evento) => actualizar('numeroEmpleado', evento.target.value)}
@@ -103,6 +117,7 @@ export function FormularioEmpleado({
         <Campo
           etiqueta="Nombre(s)"
           name="nombre"
+          required
           value={valores.nombre}
           onChange={(evento) => actualizar('nombre', evento.target.value)}
           error={errores.nombre}
@@ -110,6 +125,7 @@ export function FormularioEmpleado({
         <Campo
           etiqueta="Apellido paterno"
           name="apellidoPaterno"
+          required
           value={valores.apellidoPaterno}
           onChange={(evento) => actualizar('apellidoPaterno', evento.target.value)}
           error={errores.apellidoPaterno}
@@ -121,11 +137,45 @@ export function FormularioEmpleado({
           onChange={(evento) => actualizar('apellidoMaterno', evento.target.value)}
         />
         <Campo
+          etiqueta="CURP"
+          name="curp"
+          maxLength={18}
+          value={valores.curp}
+          onChange={(evento) => actualizar('curp', evento.target.value.toUpperCase())}
+          error={errores.curp}
+        />
+        <Campo
+          etiqueta="RFC"
+          name="rfc"
+          maxLength={13}
+          value={valores.rfc}
+          onChange={(evento) => actualizar('rfc', evento.target.value.toUpperCase())}
+          error={errores.rfc}
+        />
+        <Campo
+          etiqueta="NSS"
+          name="nss"
+          maxLength={15}
+          value={valores.nss}
+          onChange={(evento) => actualizar('nss', evento.target.value)}
+          error={errores.nss}
+        />
+        <Campo
+          etiqueta="Teléfono"
+          name="telefono"
+          type="tel"
+          maxLength={20}
+          value={valores.telefono}
+          onChange={(evento) => actualizar('telefono', evento.target.value)}
+          error={errores.telefono}
+        />
+        <Campo
           etiqueta="Salario diario (MXN)"
           name="salarioDiario"
           type="number"
           min="0.01"
           step="0.01"
+          required
           value={valores.salarioDiario}
           onChange={(evento) => actualizar('salarioDiario', evento.target.value)}
           error={errores.salarioDiario}
@@ -171,6 +221,7 @@ export function FormularioEmpleado({
           etiqueta="Fecha de ingreso"
           name="fechaIngreso"
           type="date"
+          required
           value={valores.fechaIngreso}
           onChange={(evento) => actualizar('fechaIngreso', evento.target.value)}
           error={errores.fechaIngreso}
@@ -183,8 +234,8 @@ export function FormularioEmpleado({
         <Boton variante="secundario" onClick={onCancelar} type="button">
           Cancelar
         </Boton>
-        <Boton type="submit" cargando={enviando}>
-          Guardar empleado
+        <Boton type="submit" cargando={guardar.ejecutando}>
+          {empleado ? 'Guardar cambios' : 'Guardar empleado'}
         </Boton>
       </div>
     </form>

@@ -1,16 +1,20 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { ProveedorSesion } from '@/features/auth/contexto/SesionContexto';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { queryClient } from '@/shared/lib/queryClient';
 
 function renderizarLogin() {
   return render(
-    <MemoryRouter>
-      <ProveedorSesion>
-        <LoginPage />
-      </ProveedorSesion>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <ProveedorSesion>
+          <LoginPage />
+        </ProveedorSesion>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

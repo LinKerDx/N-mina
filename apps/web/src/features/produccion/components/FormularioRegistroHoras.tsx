@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import type { NuevoRegistro } from '@/features/produccion/api';
 import type { EmpleadoResumen } from '@/features/empleados/api';
 import { mensajeDeError } from '@/shared/lib/errores';
+import { fechaCalendarioLocal } from '@/shared/lib/fechaCalendario';
 
 export function FormularioRegistroHoras({
   empleados,
@@ -18,7 +19,7 @@ export function FormularioRegistroHoras({
   onRegistrado: (registros: NuevoRegistro[]) => Promise<void>;
   onCancelar: () => void;
 }) {
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = fechaCalendarioLocal();
   const [valores, setValores] = useState({
     empleadoId: '',
     centroTrabajoId: '',
@@ -94,6 +95,7 @@ export function FormularioRegistroHoras({
       <Selector
         etiqueta="Empleado"
         name="empleadoId"
+        required
         value={valores.empleadoId}
         onChange={(evento) => actualizar('empleadoId', evento.target.value)}
         error={errores.empleadoId}
@@ -124,6 +126,7 @@ export function FormularioRegistroHoras({
         <Selector
           etiqueta="Turno"
           name="turnoId"
+          required
           value={valores.turnoId}
           onChange={(evento) => actualizar('turnoId', evento.target.value)}
           error={errores.turnoId}
@@ -140,6 +143,7 @@ export function FormularioRegistroHoras({
           etiqueta="Fecha"
           name="fecha"
           type="date"
+          required
           value={valores.fecha}
           onChange={(evento) => actualizar('fecha', evento.target.value)}
           error={errores.fecha}
@@ -152,6 +156,7 @@ export function FormularioRegistroHoras({
           step="0.25"
           min="0"
           max="24"
+          required
           value={valores.horasNormales}
           onChange={(evento) => actualizar('horasNormales', evento.target.value)}
           error={errores.horasNormales}

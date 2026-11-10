@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { mensajeDeError } from '@/shared/lib/errores';
 
 export interface EstadoConsulta<T> {
@@ -8,60 +8,22 @@ export interface EstadoConsulta<T> {
   recargar: () => void;
 }
 
-/**
- * Hook minimo de consulta: la `clave` describe las dependencias (por ejemplo
- * `empleados:ana:1`). Cambiarla vuelve a ejecutar la peticion.
- */
+/** Compatibilidad de la UI con TanStack Query y claves tipadas por pantalla. */
 export function useConsulta<T>(
   consulta: (senal: AbortSignal) => Promise<T>,
   clave: string,
   habilitado = true,
 ): EstadoConsulta<T> {
-  const [datos, setDatos] = useState<T | null>(null);
-  const [cargando, setCargando] = useState(habilitado);
-  const [error, setError] = useState<string | null>(null);
-  const [version, setVersion] = useState(0);
+  const query = useQuery({
+    queryKey: ['nomina360', clave],
+    queryFn: ({ signal }) => consulta(signal),
+    enabled: habilitado,
+  });
 
-  const consultaRef = useRef(consulta);
-  consultaRef.current = consulta;
-
-  useEffect(() => {
-    if (!habilitado) {
-      setCargando(false);
-      return;
-    }
-
-    const controlador = new AbortController();
-    let activo = true;
-
-    setCargando(true);
-    setError(null);
-
-    consultaRef
-      .current(controlador.signal)
-      .then((resultado) => {
-        if (activo) {
-          setDatos(resultado);
-        }
-      })
-      .catch((excepcion: unknown) => {
-        if (activo && !controlador.signal.aborted) {
-          setError(mensajeDeError(excepcion));
-        }
-      })
-      .finally(() => {
-        if (activo) {
-          setCargando(false);
-        }
-      });
-
-    return () => {
-      activo = false;
-      controlador.abort();
-    };
-  }, [clave, habilitado, version]);
-
-  const recargar = useCallback(() => setVersion((actual) => actual + 1), []);
-
-  return { datos, cargando, error, recargar };
+  return {
+    datos: query.data ?? null,
+    cargando: query.isLoading,
+    error: query.error ? mensajeDeError(query.error) : null,
+    recargar: () => void query.refetch(),
+  };
 }

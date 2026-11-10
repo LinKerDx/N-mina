@@ -27,6 +27,8 @@ import {
 import { FormularioPago } from '@/features/administracion/components/FormularioPago';
 import { Aviso, EncabezadoPagina } from '@/shared/componentes/EncabezadoPagina';
 import { Icono } from '@/shell/iconos';
+import { exportarCsv } from '@/shared/lib/exportarCsv';
+import { ErrorCarga } from '@/shared/componentes/ErrorCarga';
 
 const EJERCICIO = new Date().getFullYear();
 const ANIOS = [EJERCICIO - 1, EJERCICIO, EJERCICIO + 1];
@@ -91,7 +93,11 @@ export function AdministracionPage() {
           <BarraProgreso
             valor={fila.porcentajeEjercido}
             tono={
-              fila.porcentajeEjercido > 90 ? 'peligro' : fila.porcentajeEjercido > 70 ? 'ambar' : 'brand'
+              fila.porcentajeEjercido > 90
+                ? 'peligro'
+                : fila.porcentajeEjercido > 70
+                  ? 'ambar'
+                  : 'brand'
             }
             etiqueta={`Ejercicio de ${fila.centroCostoNombre}`}
           />
@@ -102,7 +108,9 @@ export function AdministracionPage() {
       clave: 'porcentaje',
       encabezado: '%',
       alinear: 'derecha',
-      render: (fila) => <span className="text-xs text-slate-400">{porcentaje(fila.porcentajeEjercido)}</span>,
+      render: (fila) => (
+        <span className="text-xs text-slate-400">{porcentaje(fila.porcentajeEjercido)}</span>
+      ),
     },
     {
       clave: 'disponible',
@@ -121,7 +129,9 @@ export function AdministracionPage() {
       render: (fila) => (
         <div>
           <p className="font-mono text-xs text-slate-200">{fila.folio}</p>
-          <p className="text-[11px] text-slate-500">{nombreCentro.get(fila.centroCostoId) ?? '—'}</p>
+          <p className="text-[11px] text-slate-500">
+            {nombreCentro.get(fila.centroCostoId) ?? '—'}
+          </p>
         </div>
       ),
     },
@@ -180,41 +190,51 @@ export function AdministracionPage() {
       />
 
       {mensaje ? <Aviso tono="exito">{mensaje}</Aviso> : null}
-      {resumen.error ? <Aviso>{resumen.error}</Aviso> : null}
+      {resumen.error ? (
+        <ErrorCarga
+          mensaje={resumen.error}
+          onReintentar={resumen.recargar}
+          recurso="el resumen presupuestal"
+        />
+      ) : null}
       {crearPago.error ? <Aviso>{crearPago.error}</Aviso> : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           titulo="Presupuesto"
-          valor={moneda(resumen.datos?.totalPresupuestado ?? 0)}
-          detalle={`Ejercicio ${anio}`}
+          valor={resumen.error ? '—' : moneda(resumen.datos?.totalPresupuestado ?? 0)}
+          detalle={resumen.error ? 'No disponible' : `Ejercicio ${anio}`}
           icono={<Icono nombre="dinero" className="size-5" />}
           cargando={resumen.cargando}
         />
         <Kpi
           titulo="Ejercido"
-          valor={moneda(resumen.datos?.totalEjercido ?? 0)}
-          detalle={`${porcentaje(
-            resumen.datos && resumen.datos.totalPresupuestado > 0
-              ? (resumen.datos.totalEjercido / resumen.datos.totalPresupuestado) * 100
-              : 0,
-          )} del total`}
+          valor={resumen.error ? '—' : moneda(resumen.datos?.totalEjercido ?? 0)}
+          detalle={
+            resumen.error
+              ? 'No disponible'
+              : `${porcentaje(
+                  resumen.datos && resumen.datos.totalPresupuestado > 0
+                    ? (resumen.datos.totalEjercido / resumen.datos.totalPresupuestado) * 100
+                    : 0,
+                )} del total`
+          }
           acento="ambar"
           icono={<Icono nombre="administracion" className="size-5" />}
           cargando={resumen.cargando}
         />
         <Kpi
           titulo="Disponible"
-          valor={moneda(resumen.datos?.disponible ?? 0)}
-          detalle="Remanente presupuestal"
+          valor={resumen.error ? '—' : moneda(resumen.datos?.disponible ?? 0)}
+          detalle={resumen.error ? 'No disponible' : 'Remanente presupuestal'}
           acento="cielo"
           icono={<Icono nombre="check" className="size-5" />}
           cargando={resumen.cargando}
         />
         <Kpi
           titulo="Pagos del mes"
-          valor={resumen.datos?.pagosDelMes ?? 0}
-          detalle={moneda(resumen.datos?.montoPagadoMes ?? 0)}
+          valor={resumen.error ? '—' : (resumen.datos?.pagosDelMes ?? 0)}
+          detalle={resumen.error ? 'No disponible' : moneda(resumen.datos?.montoPagadoMes ?? 0)}
           acento="violeta"
           icono={<Icono nombre="nomina" className="size-5" />}
           cargando={resumen.cargando}
@@ -226,9 +246,47 @@ export function AdministracionPage() {
           <EncabezadoTarjeta
             titulo="Presupuesto por centro de costo"
             descripcion="Montos mensuales y porcentaje ejercido"
+            accion={
+              <Boton
+                variante="fantasma"
+                tamano="sm"
+                disabled={!presupuestos.datos?.length}
+                onClick={() =>
+                  exportarCsv(
+                    `presupuestos-${anio}.csv`,
+                    [
+                      'Centro de costo',
+                      'Ejercicio',
+                      'Mes',
+                      'Presupuestado',
+                      'Ejercido',
+                      'Disponible',
+                      'Porcentaje ejercido',
+                    ],
+                    (presupuestos.datos ?? []).map((fila) => [
+                      fila.centroCostoNombre ?? '',
+                      fila.ejercicio,
+                      fila.mes,
+                      fila.montoPresupuestado,
+                      fila.montoEjercido,
+                      fila.disponible,
+                      fila.porcentajeEjercido,
+                    ]),
+                  )
+                }
+              >
+                Exportar CSV
+              </Boton>
+            }
           />
           {presupuestos.cargando ? (
             <Cargador />
+          ) : presupuestos.error ? (
+            <ErrorCarga
+              mensaje={presupuestos.error}
+              onReintentar={presupuestos.recargar}
+              recurso="los presupuestos"
+            />
           ) : (
             <Tabla<Presupuesto>
               filas={presupuestos.datos ?? []}
@@ -249,13 +307,38 @@ export function AdministracionPage() {
             titulo="Pagos recientes"
             descripcion="Últimos movimientos del mes"
             accion={
-              <Boton variante="fantasma" tamano="sm" onClick={() => setModalPago(true)}>
-                Nuevo pago
-              </Boton>
+              <div className="flex gap-2">
+                <Boton
+                  variante="fantasma"
+                  tamano="sm"
+                  disabled={!pagos.datos?.length}
+                  onClick={() =>
+                    exportarCsv(
+                      'pagos.csv',
+                      ['Folio', 'Tipo', 'Centro de costo', 'Fecha', 'Monto', 'Estatus'],
+                      (pagos.datos ?? []).map((fila) => [
+                        fila.folio,
+                        fila.tipo,
+                        nombreCentro.get(fila.centroCostoId) ?? '',
+                        fila.fechaPago,
+                        fila.monto,
+                        fila.estatus,
+                      ]),
+                    )
+                  }
+                >
+                  Exportar
+                </Boton>
+                <Boton variante="fantasma" tamano="sm" onClick={() => setModalPago(true)}>
+                  Nuevo pago
+                </Boton>
+              </div>
             }
           />
           {pagos.cargando ? (
             <Cargador />
+          ) : pagos.error ? (
+            <ErrorCarga mensaje={pagos.error} onReintentar={pagos.recargar} recurso="los pagos" />
           ) : (
             <Tabla<Pago>
               filas={(pagos.datos ?? []).slice(0, 8)}
@@ -279,12 +362,28 @@ export function AdministracionPage() {
         descripcion="El pago se valida contra el presupuesto disponible del centro de costo."
         ancho="lg"
       >
-        <FormularioPago
-          centros={centros.datos ?? []}
-          proveedores={proveedores.datos ?? []}
-          onCancelar={() => setModalPago(false)}
-          onRegistrado={manejarPago}
-        />
+        {centros.cargando || proveedores.cargando ? (
+          <Cargador />
+        ) : centros.error ? (
+          <ErrorCarga
+            mensaje={centros.error}
+            onReintentar={centros.recargar}
+            recurso="los centros de costo"
+          />
+        ) : proveedores.error ? (
+          <ErrorCarga
+            mensaje={proveedores.error}
+            onReintentar={proveedores.recargar}
+            recurso="los proveedores"
+          />
+        ) : (
+          <FormularioPago
+            centros={centros.datos ?? []}
+            proveedores={proveedores.datos ?? []}
+            onCancelar={() => setModalPago(false)}
+            onRegistrado={manejarPago}
+          />
+        )}
       </Modal>
     </div>
   );

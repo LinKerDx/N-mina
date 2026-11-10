@@ -26,7 +26,7 @@ COPY backend/services backend/services
 RUN --mount=type=cache,id=maven,sharing=locked,target=/root/.m2 \
     mvn -B -ntp -f backend/pom.xml -pl services/${SERVICE} -am -DskipTests package
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 RUN apk add --no-cache wget \
     && addgroup -S nomina \

@@ -1,14 +1,23 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: [
-    './index.html',
-    './src/**/*.{ts,tsx}',
-    '../../packages/ui/src/**/*.{ts,tsx}',
-  ],
+  content: ['./index.html', './src/**/*.{ts,tsx}', '../../packages/ui/src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
+        white: 'rgb(var(--theme-white) / <alpha-value>)',
+        slate: {
+          50: 'rgb(var(--theme-slate-50) / <alpha-value>)',
+          100: 'rgb(var(--theme-slate-100) / <alpha-value>)',
+          200: 'rgb(var(--theme-slate-200) / <alpha-value>)',
+          300: 'rgb(var(--theme-slate-300) / <alpha-value>)',
+          400: 'rgb(var(--theme-slate-400) / <alpha-value>)',
+          500: 'rgb(var(--theme-slate-500) / <alpha-value>)',
+          600: 'rgb(var(--theme-slate-600) / <alpha-value>)',
+          700: 'rgb(var(--theme-slate-700) / <alpha-value>)',
+          800: 'rgb(var(--theme-slate-800) / <alpha-value>)',
+          900: 'rgb(var(--theme-slate-900) / <alpha-value>)',
+        },
         brand: {
           50: '#ecfdf5',
           100: '#d1fae5',
@@ -22,12 +31,12 @@ const config: Config = {
           900: '#064e3b',
         },
         ink: {
-          500: '#263248',
-          600: '#1a2438',
-          700: '#111a2c',
-          800: '#0b1220',
-          900: '#070c16',
-          950: '#05080f',
+          500: 'rgb(var(--theme-ink-500) / <alpha-value>)',
+          600: 'rgb(var(--theme-ink-600) / <alpha-value>)',
+          700: 'rgb(var(--theme-ink-700) / <alpha-value>)',
+          800: 'rgb(var(--theme-ink-800) / <alpha-value>)',
+          900: 'rgb(var(--theme-ink-900) / <alpha-value>)',
+          950: 'rgb(var(--theme-ink-950) / <alpha-value>)',
         },
         acento: '#7c5cff',
       },

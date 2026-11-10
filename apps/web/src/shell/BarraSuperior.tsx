@@ -17,6 +17,12 @@ const ESTADOS_DISPONIBILIDAD: Record<Disponibilidad, { etiqueta: string; color: 
   NO_MOLESTAR: { etiqueta: 'No molestar', color: 'bg-rose-400' },
 };
 
+const ESTADOS_EMPLEADO: Record<Disponibilidad, { etiqueta: string; color: string }> = {
+  EN_LINEA: { etiqueta: 'En horario laboral', color: 'bg-emerald-400' },
+  AUSENTE: { etiqueta: 'Comiendo', color: 'bg-amber-400' },
+  NO_MOLESTAR: { etiqueta: 'Fuera de horario laboral', color: 'bg-slate-400' },
+};
+
 export function BarraSuperior({
   titulo,
   onAbrirMenu,
@@ -29,10 +35,23 @@ export function BarraSuperior({
   menuBotonRef: RefObject<HTMLButtonElement | null>;
 }) {
   const disponibilidad = useSesionStore((estado) => estado.disponibilidad);
+  const usuario = useSesionStore((estado) => estado.usuario);
   const establecerDisponibilidad = useSesionStore((estado) => estado.establecerDisponibilidad);
   const [menuDisponibilidad, setMenuDisponibilidad] = useState(false);
+  const [modoClaro, setModoClaro] = useState(
+    () =>
+      typeof window !== 'undefined' && window.localStorage.getItem('nomina360.tema') === 'claro',
+  );
   const disponibilidadBotonRef = useRef<HTMLButtonElement>(null);
-  const estadoActual = ESTADOS_DISPONIBILIDAD[disponibilidad];
+  const esEmpleado = usuario?.rol === 'EMPLEADO';
+  const estados = esEmpleado ? ESTADOS_EMPLEADO : ESTADOS_DISPONIBILIDAD;
+  const estadoActual = estados[disponibilidad];
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = modoClaro ? 'light' : 'dark';
+    document.documentElement.style.colorScheme = modoClaro ? 'light' : 'dark';
+    window.localStorage.setItem('nomina360.tema', modoClaro ? 'claro' : 'oscuro');
+  }, [modoClaro]);
 
   useEffect(() => {
     if (!menuDisponibilidad) return;
@@ -84,6 +103,15 @@ export function BarraSuperior({
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <BuscadorGlobal />
         <CentroAvisos />
+        <button
+          type="button"
+          onClick={() => setModoClaro((actual) => !actual)}
+          aria-label={modoClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
+          title={modoClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
+          className="grid size-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-sm text-slate-300 transition hover:bg-white/[0.08]"
+        >
+          <span aria-hidden="true">{modoClaro ? '☾' : '☼'}</span>
+        </button>
         <span aria-hidden="true" className="mx-1 hidden h-8 w-px bg-white/10 sm:block" />
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 sm:gap-3 sm:px-2">
           <span className="hidden whitespace-nowrap px-1 text-center text-xs capitalize text-slate-500 lg:block">
@@ -119,8 +147,8 @@ export function BarraSuperior({
                   role="menu"
                   aria-label="Cambiar disponibilidad"
                 >
-                  {(Object.keys(ESTADOS_DISPONIBILIDAD) as Disponibilidad[]).map((clave) => {
-                    const estado = ESTADOS_DISPONIBILIDAD[clave];
+                  {(Object.keys(estados) as Disponibilidad[]).map((clave) => {
+                    const estado = estados[clave];
                     return (
                       <button
                         key={clave}

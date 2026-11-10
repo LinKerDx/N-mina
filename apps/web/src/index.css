@@ -5,6 +5,44 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --theme-white: 255 255 255;
+    --theme-ink-500: 38 50 72;
+    --theme-ink-600: 26 36 56;
+    --theme-ink-700: 17 26 44;
+    --theme-ink-800: 11 18 32;
+    --theme-ink-900: 7 12 22;
+    --theme-ink-950: 5 8 15;
+    --theme-slate-50: 248 250 252;
+    --theme-slate-100: 241 245 249;
+    --theme-slate-200: 226 232 240;
+    --theme-slate-300: 203 213 225;
+    --theme-slate-400: 148 163 184;
+    --theme-slate-500: 100 116 139;
+    --theme-slate-600: 71 85 105;
+    --theme-slate-700: 51 65 85;
+    --theme-slate-800: 30 41 59;
+    --theme-slate-900: 15 23 42;
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --theme-white: 15 23 42;
+    --theme-ink-500: 203 213 225;
+    --theme-ink-600: 226 232 240;
+    --theme-ink-700: 241 245 249;
+    --theme-ink-800: 255 255 255;
+    --theme-ink-900: 248 250 252;
+    --theme-ink-950: 241 245 249;
+    --theme-slate-50: 15 23 42;
+    --theme-slate-100: 30 41 59;
+    --theme-slate-200: 51 65 85;
+    --theme-slate-300: 71 85 105;
+    --theme-slate-400: 100 116 139;
+    --theme-slate-500: 100 116 139;
+    --theme-slate-600: 71 85 105;
+    --theme-slate-700: 51 65 85;
+    --theme-slate-800: 30 41 59;
+    --theme-slate-900: 15 23 42;
   }
 
   html,

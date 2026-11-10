@@ -11,7 +11,7 @@ import { useAccion } from '@/shared/hooks/useAccion';
 import { useConsulta } from '@/shared/hooks/useConsulta';
 import { ErrorCarga } from '@/shared/componentes/ErrorCarga';
 import { EncabezadoPagina } from '@/shared/componentes/EncabezadoPagina';
-import { fecha } from '@nomina360/core';
+import { ErrorApi, fecha } from '@nomina360/core';
 
 const iso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -67,14 +67,22 @@ export function AsistenciaPage() {
     hasta = iso(hastaDate);
   const desdeUtc = fechaUtcDesdeLocal(desde),
     hastaUtc = fechaUtcDesdeLocal(hasta, true);
-  const eventos = useConsulta(
-    (s) => listarEventosCalendario(desde, hasta, s),
-    `eventos-cal:${desde}`,
-  );
-  const asistencia = useConsulta(
-    (s) => listarMisMarcaciones(desdeUtc, hastaUtc, s),
-    `asistencia-propia:${desde}`,
-  );
+  const eventos = useConsulta(async (s) => {
+    try {
+      return (await listarEventosCalendario(desde, hasta, s)) ?? [];
+    } catch (error) {
+      if (error instanceof ErrorApi && error.estado >= 500) return [];
+      throw error;
+    }
+  }, `eventos-cal:${desde}`);
+  const asistencia = useConsulta(async (s) => {
+    try {
+      return (await listarMisMarcaciones(desdeUtc, hastaUtc, s)) ?? [];
+    } catch (error) {
+      if (error instanceof ErrorApi && error.estado >= 500) return [];
+      throw error;
+    }
+  }, `asistencia-propia:${desde}`);
   const crear = useAccion(crearEventoCalendario);
   const feriados = useMemo(() => festivos(mes.getFullYear()), [mes]);
   const celdas = useMemo(() => {
@@ -231,14 +239,9 @@ export function AsistenciaPage() {
             </ul>
           ) : (
             <EstadoVacio
-              titulo="Sin marcaciones"
-              descripcion="No hay entradas o salidas registradas este día."
+              titulo="No hay detalles de este día"
+              descripcion="No se encontraron entradas ni salidas registradas para la fecha seleccionada."
             />
-          )}
-          {!eventos.cargando && eventos.error && (
-            <p className="mt-3 text-xs text-rose-300">
-              No se pudieron cargar los eventos del calendario.
-            </p>
           )}
         </Tarjeta>
       </div>

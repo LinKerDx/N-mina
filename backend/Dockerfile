@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Imagen multi-stage compartida por los 5 microservicios.
 # Uso: docker build -f backend/Dockerfile --build-arg SERVICE=rh-service .
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 
 ARG SERVICE
 WORKDIR /workspace
